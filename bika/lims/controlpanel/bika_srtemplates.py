@@ -33,12 +33,11 @@ class TemplatesView(BikaListingView):
         self.title = _("SR Templates")
         self.description = ""
         self.context_actions = {
-            _('Add Template'): {
+            _('Add'): {
                 'url': 'createObject?type_name=SRTemplate',
                 'icon': '++resource++bika.lims.images/add.png'
             }
         }
-
         self.columns = {
             'Title': {
                 'title': _('Template'),
@@ -49,7 +48,6 @@ class TemplatesView(BikaListingView):
                 'index': 'description'
             },
         }
-
         self.review_states = [{
             'id':'default',
             'title': _('Default'),
