@@ -7,7 +7,7 @@ from Products.Archetypes.public import *
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
 from bika.lims.browser.widgets import RecordsWidget as BikaRecordsWidget
-# from bika.lims.browser.widgets import ReferenceWidget
+from bika.lims.browser.widgets import ReferenceWidget as BikaReferenceWidget
 from bika.lims.browser.widgets import SRTemplateARTemplatesWidget
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
@@ -37,9 +37,22 @@ schema = BikaSchema.copy() + Schema((
         vocabulary='getSamplers',
         vocabulary_display_path_bound=sys.maxint,
         widget=ReferenceWidget(
-            label=_("Default Sampler"),
-            description=_("Select the default Sampler to be assigned"),
+            label=_('Default Sampler'),
+            description=_('Select the default Sampler to be assigned'),
         ),
+    ),
+    ReferenceField(
+        'Department',
+        allowed_types=('Department',),
+        referenceClass=HoldingReference,
+        relationship='SRTemplateDepartment',
+        vocabulary_display_path_bound=sys.maxint,
+        widget=BikaReferenceWidget(
+            label=_('Department'),
+            description=_('Select the lab Department responsible'),
+            catalog_name='bika_setup_catalog',
+            showOn=True,
+        )
     ),
     ReferenceField(
         'ARTemplates',
