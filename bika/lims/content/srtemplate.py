@@ -23,15 +23,13 @@ import sys
 
 
 schema = BikaSchema.copy() + Schema((
-    TextField(
-        'Instructions',
-        searchable = True,
-        default_content_type='text/plain',
-        allowed_content_types=('text/plain'),
-        default_output_type="text/plain",
-        widget = TextAreaWidget(
-            label = _('Instructions'),
-            append_only = True,
+    DurationField(
+        'SamplingFrequency',
+        vocabulary_display_path_bound=sys.maxint,
+        widget=DurationWidget(
+            label=_('Sampling Frequency'),
+            description=_('Indicate the amount of time between recurring '
+                'field trips'),
         ),
     ),
     StringField(
@@ -56,12 +54,15 @@ schema = BikaSchema.copy() + Schema((
             showOn=True,
         )
     ),
-    DurationField('SamplingFrequency',
-        vocabulary_display_path_bound=sys.maxint,
-        widget=DurationWidget(
-            label=_('Sampling Frequency'),
-            description=_('Indicate the amount of time between recurring '
-                'field trips'),
+    TextField(
+        'Instructions',
+        searchable = True,
+        default_content_type='text/plain',
+        allowed_content_types=('text/plain'),
+        default_output_type="text/plain",
+        widget = TextAreaWidget(
+            label = _('Sampling Instructions'),
+            append_only = True,
         ),
     ),
     ReferenceField(
