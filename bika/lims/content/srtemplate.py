@@ -6,6 +6,8 @@ from Products.Archetypes.public import *
 
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.browser.fields import DurationField
+from bika.lims.browser.widgets import DurationWidget
 from bika.lims.browser.widgets import RecordsWidget as BikaRecordsWidget
 from bika.lims.browser.widgets import ReferenceWidget as BikaReferenceWidget
 from bika.lims.browser.widgets import SRTemplateARTemplatesWidget
@@ -53,6 +55,14 @@ schema = BikaSchema.copy() + Schema((
             catalog_name='bika_setup_catalog',
             showOn=True,
         )
+    ),
+    DurationField('SamplingFrequency',
+        vocabulary_display_path_bound=sys.maxint,
+        widget=DurationWidget(
+            label=_('Sampling Frequency'),
+            description=_('Indicate the amount of time between recurring '
+                'field trips'),
+        ),
     ),
     ReferenceField(
         'ARTemplates',
