@@ -36,7 +36,7 @@ schema = BikaSchema.copy() + Schema((
         'Sampler',
         vocabulary='getSamplers',
         vocabulary_display_path_bound=sys.maxint,
-        widget=ReferenceWidget(
+        widget=SelectionWidget(
             label=_('Default Sampler'),
             description=_('Select the default Sampler to be assigned'),
         ),
@@ -56,13 +56,29 @@ schema = BikaSchema.copy() + Schema((
     ),
     TextField(
         'Instructions',
-        searchable = True,
+        searchable=True,
         default_content_type='text/plain',
         allowed_content_types=('text/plain'),
         default_output_type="text/plain",
-        widget = TextAreaWidget(
-            label = _('Sampling Instructions'),
-            append_only = True,
+        widget=TextAreaWidget(
+            label=_('Sampling Instructions'),
+            append_only=True,
+        ),
+    ),
+    ComputedField(
+        'TotalSamplePoints',
+        expression='context.getTotalSamplePoints()',
+        widget=ComputedWidget(
+            visible='visible',
+            label=_('Total Sample Points'),
+        ),
+    ),
+    ComputedField(
+        'TotalContainers',
+        expression='context.getTotalContainers()',
+        widget=ComputedWidget(
+            visible='visible',
+            label=_('Total Containers'),
         ),
     ),
     ReferenceField(
@@ -73,8 +89,8 @@ schema = BikaSchema.copy() + Schema((
         allowed_types=('ARTemplate',),
         relationship='SRTemplateARTemplate',
         widget=SRTemplateARTemplatesWidget(
-            label=_("AR Templates"),
-            description=_("Select AR Templates to include"),
+            label=_('AR Templates'),
+            description=_('Select AR Templates to include'),
         )
     ),
 ))
@@ -97,8 +113,18 @@ class SRTemplate(BaseContent):
         renameAfterCreation(self)
 
     def getSamplers(self):
-        samplers = getUsers(self, ['Sampler', 'LabManager', 'Manager'])
-        return samplers
+        users = getUsers(self, ['Sampler', 'LabManager', 'Manager'])
+        return users
+
+    def getTotalSamplePoints(self):
+        return len(self.getARTemplates())
+
+    def getTotalContainers(self):
+        return reduce(
+            lambda r,o: r + len(o.getPartitions()),
+            self.getARTemplates(),
+            0
+        )
 
 
 registerType(SRTemplate, PROJECTNAME)
