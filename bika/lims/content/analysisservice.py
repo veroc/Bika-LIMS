@@ -710,10 +710,6 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
     displayContentsTab = False
     implements(IAnalysisService)
 
-    instrumentsdl = None
-    methodsdl = None
-    calculationsdl = None
-
     _at_rename_after_creation = True
     def _renameAfterCreation(self, check_auto_id=False):
         from bika.lims.idserver import renameAfterCreation
@@ -802,14 +798,12 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
             registered in Bika-Setup. Only active Instruments are
             fetched. Used to fill the Instruments MultiSelectionWidget
         """
-        if not self.instrumentsdl:
-            bsc = getToolByName(self, 'bika_setup_catalog')
-            items = [(i.UID, i.Title) \
-                    for i in bsc(portal_type='Instrument',
-                                 inactive_state = 'active')]
-            items.sort(lambda x,y: cmp(x[1], y[1]))
-            self.instrumentsdl = DisplayList(list(items))
-        return self.instrumentsdl
+        bsc = getToolByName(self, 'bika_setup_catalog')
+        items = [(i.UID, i.Title) \
+                for i in bsc(portal_type='Instrument',
+                             inactive_state = 'active')]
+        items.sort(lambda x,y: cmp(x[1], y[1]))
+        return DisplayList(list(items))
 
     def _getAvailableMethodsDisplayList(self):
         """ Returns a DisplayList with the available Methods
@@ -832,14 +826,13 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
             fetched. Used to fill the _Calculation and DeferredCalculation
             List fields
         """
-        if not self.calculationsdl:
-            bsc = getToolByName(self, 'bika_setup_catalog')
-            items = [(i.UID, i.Title) \
-                    for i in bsc(portal_type='Calculation',
-                                 inactive_state = 'active')]
-            items.sort(lambda x,y: cmp(x[1], y[1]))
-            self.calculationsdl = DisplayList(list(items))
-        return self.calculationsdl
+        bsc = getToolByName(self, 'bika_setup_catalog')
+        items = [(i.UID, i.Title) \
+                for i in bsc(portal_type='Calculation',
+                             inactive_state = 'active')]
+        items.sort(lambda x,y: cmp(x[1], y[1]))
+        items.insert(0, ('', _("None")))
+        return DisplayList(list(items))
 
     def getCalculation(self):
         """ Returns the calculation to be used in this AS.
