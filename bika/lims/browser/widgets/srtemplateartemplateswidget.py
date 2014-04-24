@@ -1,5 +1,6 @@
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import title_link
 from bika.lims.browser.bika_listing import BikaListingView
 from Products.Archetypes.Registry import registerWidget
 from Products.Archetypes.Widget import TypesWidget
@@ -53,9 +54,7 @@ class SRTemplateARTemplatesView(BikaListingView):
         for item in items:
             if not item.has_key('obj'): continue
             obj = item['obj']
-            title_link = "<a href='%s'>%s</a>" % (item['url'], item['title'])
-            item['replace']['Title'] = title_link
-            item['selected'] = item['uid'] in self.selected
+            item['replace']['Title'] = title_link(obj)
         return items
 
 
