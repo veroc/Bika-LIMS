@@ -1,27 +1,26 @@
-from AccessControl import getSecurityManager
+import json
+
 from bika.lims import bikaMessageFactory as _
 from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.content.analysisrequest import schema as AnalysisRequestSchema
 from bika.lims.interfaces import IAnalysisRequestAddView
-from bika.lims.permissions import *
 from bika.lims.browser.analysisrequest import AnalysisRequestViewView
+from bika.lims.jsonapi import load_brain_metadata
+from bika.lims.jsonapi import load_field_values
 from bika.lims.utils import to_utf8
 from bika.lims.utils import tmpID
 from bika.lims.workflow import doActionFor
-from DateTime import DateTime
 from plone.app.layout.globals.interfaces import IViewView
 from Products.Archetypes import PloneMessageFactory as PMF
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope.component import getAdapter
 from zope.interface import implements
-
-import json
 import plone
 
-class AnalysisRequestAddView(AnalysisRequestViewView):
 
+class AnalysisRequestAddView(AnalysisRequestViewView):
     """ The main AR Add form
     """
     implements(IViewView, IAnalysisRequestAddView)
@@ -38,7 +37,7 @@ class AnalysisRequestAddView(AnalysisRequestViewView):
         try:
             self.col_count = int(self.col_count)
         except:
-            self.col_count == 4
+            self.col_count = 4
 
     def __call__(self):
         self.request.set('disable_border', 1)
@@ -58,13 +57,11 @@ class AnalysisRequestAddView(AnalysisRequestViewView):
         for service in bsc(portal_type='AnalysisService'):
             service = service.getObject()
             if service.getPartitionSetup() \
-               or service.getSeparate():
+                or service.getSeparate():
                 ps.append(service.UID())
         return json.dumps(ps)
 
-
 class SecondaryARSampleInfo(BrowserView):
-
     """Return fieldnames and pre-digested values for Sample fields which
     javascript must disable/display while adding secondary ARs
     """
@@ -98,7 +95,6 @@ class SecondaryARSampleInfo(BrowserView):
 
 
 class ajaxExpandCategory(BikaListingView):
-
     """ ajax requests pull this view for insertion when category header
     rows are clicked/expanded. """
     template = ViewPageTemplateFile("templates/analysisrequest_analysisservices.pt")
@@ -135,7 +131,6 @@ class ajaxExpandCategory(BikaListingView):
 
 
 class ajaxAnalysisRequestSubmit():
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -150,7 +145,7 @@ class ajaxAnalysisRequestSubmit():
         uc = getToolByName(self.context, 'uid_catalog')
         bsc = getToolByName(self.context, 'bika_setup_catalog')
 
-        SamplingWorkflowEnabled =\
+        SamplingWorkflowEnabled = \
             self.context.bika_setup.getSamplingWorkflowEnabled()
 
         errors = {}
@@ -183,8 +178,8 @@ class ajaxAnalysisRequestSubmit():
 
         # Now some basic validation
         required_fields = [field.getName() for field
-                          in AnalysisRequestSchema.fields()
-                          if field.required]
+                           in AnalysisRequestSchema.fields()
+                           if field.required]
 
         for column in columns:
             formkey = "ar.%s" % column
@@ -201,7 +196,7 @@ class ajaxAnalysisRequestSubmit():
                 # This one is still special.
                 if field in ['RequestID']:
                     continue
-                # And these are not required if this is a secondary AR
+                    # And these are not required if this is a secondary AR
                 if ar.get('Sample', '') != '' and field in [
                     'SamplingDate',
                     'SampleType'
@@ -264,7 +259,7 @@ class ajaxAnalysisRequestSubmit():
                     wftool.doActionFor(sample, 'sampling_workflow')
                 else:
                     wftool.doActionFor(sample, 'no_sampling_workflow')
-                # Object has been renamed
+                    # Object has been renamed
                 sample.edit(SampleID=sample.getId())
 
             resolved_values['Sample'] = sample
@@ -275,9 +270,9 @@ class ajaxAnalysisRequestSubmit():
             # The result is the same once we are here.
             if not parts:
                 parts = [{'services': [],
-                         'container':[],
-                         'preservation':'',
-                         'separate':False}]
+                          'container': [],
+                          'preservation': '',
+                          'separate': False}]
 
             # Apply DefaultContainerType to partitions without a container
             d_clist = []
@@ -331,10 +326,12 @@ class ajaxAnalysisRequestSubmit():
                             try:
                                 containers.sort(lambda a, b: cmp(
                                     a.getCapacity()
-                                    and mg(float(a.getCapacity().lower().split(" ", 1)[0]), a.getCapacity().lower().split(" ", 1)[1])
+                                    and mg(float(a.getCapacity().lower().split(" ", 1)[0]),
+                                           a.getCapacity().lower().split(" ", 1)[1])
                                     or mg(0, 'ml'),
                                     b.getCapacity()
-                                    and mg(float(b.getCapacity().lower().split(" ", 1)[0]), b.getCapacity().lower().split(" ", 1)[1])
+                                    and mg(float(b.getCapacity().lower().split(" ", 1)[0]),
+                                           b.getCapacity().lower().split(" ", 1)[1])
                                     or mg(0, 'ml')
                                 ))
                             except:
@@ -348,8 +345,8 @@ class ajaxAnalysisRequestSubmit():
                     # If container is pre-preserved, set the part's preservation,
                     # and flag the partition to be transitioned below.
                     if container \
-                       and container.getPrePreserved() \
-                       and container.getPreservation():
+                        and container.getPrePreserved() \
+                        and container.getPreservation():
                         preservation = container.getPreservation().UID()
                         parts[_i]['prepreserved'] = True
                     else:
@@ -435,10 +432,10 @@ class ajaxAnalysisRequestSubmit():
 
         if len(ARs) > 1:
             message = _("Analysis requests ${ARs} were successfully created.",
-                  mapping={'ARs': ', '.join(ARs)})
+                        mapping={'ARs': ', '.join(ARs)})
         else:
             message = _("Analysis request ${AR} was successfully created.",
-                  mapping={'AR': ARs[0]})
+                        mapping={'AR': ARs[0]})
 
         self.context.plone_utils.addPortalMessage(message, 'info')
 
