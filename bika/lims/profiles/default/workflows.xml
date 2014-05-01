@@ -325,6 +325,8 @@
 
   <type type_id="SamplesFolder"/>
 
+  <type type_id="SamplingRound"/>
+
   <type type_id="SRTemplate"/>
 
   <type type_id="SRTemplates"/>

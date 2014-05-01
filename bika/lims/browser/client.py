@@ -521,6 +521,64 @@ class ClientSamplePointsView(BikaListingView):
 
         return items
 
+
+class ClientSamplingRoundsView(BikaListingView):
+    """This is displayed in the Templates client action,
+       in the "Sampling Rounds" tab
+    """
+
+    def __init__(self, context, request):
+        super(ClientSamplingRoundsView, self).__init__(context, request)
+        self.catalog = "bika_setup_catalog"
+        self.contentFilter = {
+            'portal_type': 'SampleRound',
+            'sort_on':'sortable_title',
+            'path': {
+                "query": "/".join(self.context.getPhysicalPath()),
+                "level" : 0 },
+        }
+        self.show_sort_column = False
+        self.show_select_row = False
+        self.show_select_column = True
+        self.pagesize = 50
+        self.form_id = "srtemplates"
+        self.icon = self.portal_url + "/++resource++bika.lims.images/artemplate_big.png"
+        self.title = _("Sampling Rounds")
+        self.description = ""
+        self.columns = {
+            'title': {'title': _('Title'),
+                      'index': 'sortable_title'},
+            'Description': {'title': _('Description'),
+                            'index': 'description'},
+        }
+        self.review_states = [
+            {'id':'default',
+             'title': _('All'),
+             'contentFilter': {},
+             'transitions': [],
+             'columns': ['title', 'Description']},
+        ]
+
+    def __call__(self):
+        mtool = getToolByName(self.context, 'portal_membership')
+        checkPermission = mtool.checkPermission
+        if checkPermission(AddSamplingRound, self.context):
+            self.context_actions[_('Add')] = \
+                {'url': 'createObject?type_name=SamplingRound',
+                 'icon': '++resource++bika.lims.images/add.png'}
+        return super(ClientSamplingRoundsView, self).__call__()
+
+    def folderitems(self):
+        items = BikaListingView.folderitems(self)
+        for x in range(len(items)):
+            if not items[x].has_key('obj'): continue
+            obj = items[x]['obj']
+            items[x]['title'] = obj.Title()
+            items[x]['replace']['title'] = "<a href='%s'>%s</a>" % \
+                 (items[x]['url'], items[x]['title'])
+        return items
+
+
 class ClientSRTemplatesView(BikaListingView):
     """This is displayed in the Templates client action,
        in the "SR Templates" tab
@@ -576,6 +634,7 @@ class ClientSRTemplatesView(BikaListingView):
             items[x]['replace']['title'] = "<a href='%s'>%s</a>" % \
                  (items[x]['url'], items[x]['title'])
         return items
+
 
 class ClientAnalysisSpecsView(BikaListingView):
     implements(IViewView)

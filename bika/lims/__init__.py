@@ -100,6 +100,7 @@ def initialize(context):
     from content.samplesfolder import SamplesFolder
     from content.sampletype import SampleType
     from content.samplingdeviation import SamplingDeviation
+    from content.samplinground import SamplingRound
     from content.srtemplate import SRTemplate
     from content.subgroup import SubGroup
     from content.supplier import Supplier

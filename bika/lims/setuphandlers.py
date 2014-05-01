@@ -204,6 +204,7 @@ class BikaGenerator:
         mp(AddSamplePoint, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 1)
         mp(AddStorageLocation, ['Manager', 'Owner', 'LabManager', ], 1)
         mp(AddSamplingDeviation, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 1)
+        mp(AddSamplingRound, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 1)
         mp(AddSRTemplate, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 1)
         mp(AddSubGroup, ['Manager', 'LabManager', 'LabClerk'], 0)
         mp(AddQuery, ['Manager', 'Owner', 'LabManager', 'LabClerk'], 0)

@@ -1,5 +1,5 @@
 """
-    Sampling Round Template
+    Sampling Round
 """
 
 from Products.Archetypes.public import *
@@ -65,18 +65,22 @@ schema = BikaSchema.copy() + Schema((
             append_only=True,
         ),
     ),
-    ReferenceField(
-        'ARTemplates',
-        schemata='AR Templates',
-        required=1,
-        multiValued=1,
-        allowed_types=('ARTemplate',),
-        relationship='SRTemplateARTemplate',
-        widget=SRTemplateARTemplatesWidget(
-            label=_('AR Templates'),
-            description=_('Select AR Templates to include'),
-        )
-    ),
+    # ComputedField(
+    #     'TotalSamplePoints',
+    #     expression='context.getTotalSamplePoints()',
+    #     widget=ComputedWidget(
+    #         visible='visible',
+    #         label=_('Total Sample Points'),
+    #     ),
+    # ),
+    # ComputedField(
+    #     'TotalContainers',
+    #     expression='context.getTotalContainers()',
+    #     widget=ComputedWidget(
+    #         visible='visible',
+    #         label=_('Total Containers'),
+    #     ),
+    # ),
 ))
 
 
@@ -87,7 +91,7 @@ schema['title'].validators = ('uniquefieldvalidator',)
 schema['title']._validationLayer()
 
 
-class SRTemplate(BaseContent):
+class SamplingRound(BaseContent):
     security = ClassSecurityInfo()
     schema = schema
     displayContentsTab = False
@@ -100,5 +104,15 @@ class SRTemplate(BaseContent):
         users = getUsers(self, ['Sampler', 'LabManager', 'Manager'])
         return users
 
+    # def getTotalSamplePoints(self):
+    #     return len(self.getARTemplates())
 
-registerType(SRTemplate, PROJECTNAME)
+    # def getTotalContainers(self):
+    #     return reduce(
+    #         lambda r,o: r + len(o.getPartitions()),
+    #         self.getARTemplates(),
+    #         0
+    #     )
+
+
+registerType(SamplingRound, PROJECTNAME)
