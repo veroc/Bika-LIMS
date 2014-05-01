@@ -75,6 +75,13 @@ schema = BikaSchema.copy() + Schema((
             visible=False,
         ),
     ),
+    BooleanField('Composite',
+        default = False,
+        widget = BooleanWidget(
+            label = _('Composite'),
+            description = _('This request contains composite samples'),
+        ),
+    ),
     BooleanField('ReportDryMatter',
         default = False,
         widget = BooleanWidget(

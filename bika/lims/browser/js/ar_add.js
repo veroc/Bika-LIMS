@@ -1009,6 +1009,7 @@ function setTemplate(column, template_title){
 			"SampleTypeUID",
 			"SamplePoint",
 			"SamplePointUID",
+			"Composite",
 			"ReportDryMatter",
 			"AnalysisProfile",
 			"Partitions",
@@ -1022,7 +1023,8 @@ function setTemplate(column, template_title){
 		$("#ar_"+column+"_SampleType_uid").val(template.SampleTypeUID);
 		$("#ar_"+column+"_SamplePoint").val(template.SamplePoint);
 		$("#ar_"+column+"_SamplePoint_uid").val(template.SamplePointUID);
-		$("#ar_"+column+"_reportdrymatter").prop("checked", template.reportdrymatter);
+		$("#ar_"+column+"_Composite").prop("checked", template.Composite);
+		$("#ar_"+column+"_ReportDryMatter").prop("checked", template.ReportDryMatter);
 		set_default_spec(column);
 		// lookup AnalysisProfile
 		if(template.AnalysisProfile) {
