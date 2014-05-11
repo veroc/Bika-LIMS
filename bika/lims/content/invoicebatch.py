@@ -1,7 +1,9 @@
 """InvoiceBatch is a container for Invoice instances.
 """
 from AccessControl import ClassSecurityInfo
+from Products.CMFPlone.utils import _createObjectByType
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.config import ManageInvoices, PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
 from bika.lims.content.invoice import InvoiceLineItem
@@ -152,8 +154,7 @@ class InvoiceBatch(BaseFolder):
         """ Creates and invoice for a client and a set of items
         """
         invoice_id = self.generateUniqueId('Invoice')
-        self.invokeFactory(id=invoice_id, type_name='Invoice')
-        invoice = self._getOb(invoice_id)
+        invoice = _createObjectByType("Invoice", self, invoice_id)
         invoice.edit(
             Client=client_uid,
             InvoiceDate=DateTime(),
@@ -164,27 +165,17 @@ class InvoiceBatch(BaseFolder):
             lineitem = InvoiceLineItem()
             if item.portal_type == 'AnalysisRequest':
                 lineitem['ItemDate'] = item.getDatePublished()
-                lineitem['ClientOrderNumber'] = item.getClientOrderNumber()
-                item_description = get_invoice_item_description(item)
-                l = [item.getRequestID(), item_description]
-                description = ' '.join(l)
+                lineitem['OrderNumber'] = item.getRequestID()
+                description = get_invoice_item_description(item)
                 lineitem['ItemDescription'] = description
-                ar_inv = item.getInvoice()
-                if ar_inv:
-                    lineitem['Subtotal'] = str(ar_inv.getSubtotal())
-                    lineitem['VATTotal'] = str(ar_inv.getVATTotal())
-                    lineitem['Total'] = str(ar_inv.getTotal())
-                else:
-                    lineitem['Subtotal'] = ""
-                    lineitem['VATTotal'] = ""
-                    lineitem['Total'] = ""
             elif item.portal_type == 'SupplyOrder':
                 lineitem['ItemDate'] = item.getDateDispatched()
-                description = item.getOrderNumber()
+                lineitem['OrderNumber'] = item.getOrderNumber()
+                description = get_invoice_item_description(item)
                 lineitem['ItemDescription'] = description
-                lineitem['Subtotal'] = '%0.2f' % item.getSubtotal()
-                lineitem['VATTotal'] = '%0.2f' % item.getVATTotal()
-                lineitem['Total'] = '%0.2f' % item.getTotal()
+            lineitem['Subtotal'] = item.getSubtotal()
+            lineitem['VATTotal'] = item.getVATTotal()
+            lineitem['Total'] = item.getTotal()
             invoice.invoice_lineitems.append(lineitem)
         invoice.reindexObject()
 

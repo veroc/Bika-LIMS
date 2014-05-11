@@ -1,7 +1,9 @@
 (function( $ ) {
 $(document).ready(function(){
 
+    window.jarn.i18n.loadCatalog("bika");
     _ = jarn.i18n.MessageFactory('bika');
+    window.jarn.i18n.loadCatalog("plone");
     PMF = jarn.i18n.MessageFactory('plone');
 
     // selecting a template might pre-select the instrument
@@ -162,6 +164,7 @@ $(document).ready(function(){
     });
 
     function portalMessage(message) {
+        window.jarn.i18n.loadCatalog("bika");
         _ = jarn.i18n.MessageFactory('bika');
         str = "<dl class='portalMessage info'>"+
             "<dt>"+_('Info')+"</dt>"+
@@ -353,6 +356,21 @@ $(document).ready(function(){
             $('div.worksheet_add_controls').append('<div class="alert">'+_("Only the analyses for which the selected instrument is allowed will be added automatically.")+'</div>');
         }
     });
+
+
+   // Add a baloon icon before Analyses' name when you'd add a remark. If you click on, it'll display remarks textarea.
+
+    var txt1 = '<a href="#" class="add-remark"><img src="'+window.portal_url+'/++resource++bika.lims.images/comment_ico.png" title="'+_('Add Remark')+'")"></a>';
+    
+    $(".listing_remarks:contains('')").closest('tr').hide();
+    var pointer = $(".listing_remarks:contains('')").closest('tr').prev().find('td.service_title span.before');
+    $(pointer).append(txt1);
+
+    $("a.add-remark").click(function(e){
+	e.preventDefault();
+	$(this).closest('tr').next('tr').toggle(300);
+    });
+
 
 });
 }(jQuery));

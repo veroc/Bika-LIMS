@@ -1,10 +1,12 @@
 # coding=utf-8
 from AccessControl import getSecurityManager
+from Products.CMFPlone.utils import safe_unicode
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.config import QCANALYSIS_TYPES
-from bika.lims.interfaces import IFieldIcons
+from bika.lims.interfaces import IResultOutOfRange
 from bika.lims.permissions import *
 from bika.lims.utils import isActive
 from bika.lims.utils import getUsers
@@ -89,7 +91,7 @@ class AnalysesView(BikaListingView):
                 'sortable': False},
             'retested': {
                 'title': "<img title='%s' src='%s/++resource++bika.lims.images/retested.png'/>"%\
-                    (to_utf8(context.translate(_('Retested'))), self.portal_url),
+                    (t(_('Retested')), self.portal_url),
                 'type':'boolean',
                 'sortable': False},
             'Attachments': {
@@ -170,17 +172,15 @@ class AnalysesView(BikaListingView):
 
     def ResultOutOfRange(self, analysis):
         """ Template wants to know, is this analysis out of range?
-        We scan IFieldIcons adapters, and return True if any IAnalysis
+        We scan IResultOutOfRange adapters, and return True if any IAnalysis
         adapters trigger a result.
         """
-        adapters = getAdapters((analysis, ), IFieldIcons)
-        bsc = getToolByName(self.context, "bika_setup_catalog")
+        adapters = getAdapters((analysis, ), IResultOutOfRange)
         spec = self.get_active_spec_dict(analysis)
         for name, adapter in adapters:
             if not spec:
                 return False
-            alerts = adapter(specification=spec)
-            if alerts and analysis.UID() in alerts:
+            if adapter(specification=spec):
                 return True
 
     def getAnalysisSpecsStr(self, spec):
@@ -551,11 +551,18 @@ class AnalysesView(BikaListingView):
             #    and instrument.UID() not in method.getInstrumentUIDs():
             #    instrument = None
 
-            if service.getInstrumentEntryOfResults() == False:
+            srv_title = service.Title()
+            inst_title = instrument.Title() if instrument else ''
+
+            if not service.getInstrumentEntryOfResults():
                 # Manual entry of results, Instrument not allowed
                 item['Instrument'] = _('Manual')
-                msgtitle = _("Instrument entry of results not allowed for %s") % service.Title()
-                item['replace']['Instrument'] = '<a href="#" title="%s">%s</a>' % (msgtitle, _('Manual'))
+                msgtitle = t(_(
+                    "Instrument entry of results not allowed for ${service}",
+                    mapping={"service": safe_unicode(srv_title)},
+                ))
+                item['replace']['Instrument'] = \
+                    '<a href="#" title="%s">%s</a>' % (msgtitle, t(_('Manual')))
 
             elif can_set_instrument:
                 # Edition allowed
@@ -565,16 +572,16 @@ class AnalysesView(BikaListingView):
                     item['choices']['Instrument'] = voc
                     item['allow_edit'].append('Instrument')
                 else:
-                    item['Instrument'] = instrument.Title()
+                    item['Instrument'] = inst_title
                     item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
-                        (instrument.absolute_url(), instrument.Title())
+                        (instrument.absolute_url(), inst_title)
                 show_methodinstr_columns = True
 
             elif instrument:
                 # Edition not allowed, but an instrument is set
                 item['Instrument'] = instrument.Title()
                 item['replace']['Instrument'] = "<a href='%s'>%s</a>" % \
-                        (instrument.absolute_url(), instrument.Title())
+                        (instrument.absolute_url(), inst_title)
                 show_methodinstr_columns = True
 
             else:
@@ -649,10 +656,10 @@ class AnalysesView(BikaListingView):
                                     str("%%.%sf" % precision) % float(result) or result
                             except:
                                 items[i]['formatted_result'] = result
-                                indet = to_utf8(self.context.translate(_('Indet')))
+                                indet = t(_('Indet'))
                                 if result == indet:
                                     # 'Indeterminate' results flag a specific error
-                                    Indet = to_utf8(self.context.translate(_("Indeterminate result")))
+                                    Indet = t(_("Indeterminate result"))
                                     items[i]['after']['Result'] = \
                                         '<img width="16" height="16" title="%s"' % Indet + \
                                         'src="%s/++resource++bika.lims.images/exclamation.png"/>' % \
@@ -720,7 +727,7 @@ class AnalysesView(BikaListingView):
                     items[i]['replace']['DueDate'] = '%s <img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
                         (self.ulocalized_time(duedate, long_format=1),
                          self.portal_url,
-                         to_utf8(self.context.translate(_("Late Analysis"))))
+                         t(_("Late Analysis")))
 
             # Submitting user may not verify results (admin can though)
             if items[i]['review_state'] == 'to_be_verified' and \
@@ -738,7 +745,7 @@ class AnalysesView(BikaListingView):
                     if self_submitted:
                         items[i]['after']['state_title'] = \
                              "<img src='++resource++bika.lims.images/submitted-by-current-user.png' title='%s'/>" % \
-                             (to_utf8(self.context.translate(_("Cannot verify: Submitted by current user"))))
+                             (t(_("Cannot verify: Submitted by current user")))
                 except WorkflowException:
                     pass
 
@@ -753,9 +760,9 @@ class AnalysesView(BikaListingView):
                         ws = br[0]
                         items[i]['after']['state_title'] = \
                              "<a href='%s'><img src='++resource++bika.lims.images/worksheet.png' title='%s'/></a>" % \
-                             (ws.absolute_url(), to_utf8(self.context.translate(
-                                 _("Assigned to: ${worksheet_id}",
-                                   mapping={'worksheet_id': ws.id}))))
+                             (ws.absolute_url(),
+                              t(_("Assigned to: ${worksheet_id}",
+                                  mapping={'worksheet_id': safe_unicode(ws.id)})))
 
         # the TAL requires values for all interim fields on all
         # items, so we set blank values in unused cells

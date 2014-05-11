@@ -3,6 +3,7 @@ import time
 import transaction
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.widgets import DateTimeWidget
 from bika.lims.content.bikaschema import BikaSchema
 from bika.lims.config import ManageBika, PROJECTNAME, ARIMPORT_OPTIONS
@@ -25,7 +26,7 @@ from Products.Archetypes.references import HoldingReference
 from Products.ATContentTypes.content import schemata
 from Products.CMFCore import permissions
 from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.utils import safe_unicode
+from Products.CMFPlone.utils import safe_unicode, _createObjectByType
 from zope import event
 from zope.interface import implements
 
@@ -362,8 +363,7 @@ class ARImport(BaseFolder):
                 sample_date = None
 
             sample_id = '%s-%s' % (prefix, tmpID())
-            client.invokeFactory(id = sample_id, type_name = 'Sample')
-            sample = client[sample_id]
+            sample = _createObjectByType("Sample", client, sample_id)
             sample.unmarkCreationFlag()
             sample.edit(
                 SampleID = sample_id,
@@ -396,8 +396,7 @@ class ARImport(BaseFolder):
 
             #Create AR
             ar_id = tmpID()
-            client.invokeFactory(id = ar_id, type_name = 'AnalysisRequest')
-            ar = client[ar_id]
+            ar = _createObjectByType("AnalysisRequest", client, ar_id)
             if aritem.getReportDryMatter().lower() == 'y':
                 report_dry_matter = True
             else:
@@ -566,8 +565,7 @@ class ARImport(BaseFolder):
                 sample_date = None
 
             sample_id = '%s-%s' % (prefix, tmpID())
-            client.invokeFactory(id = sample_id, type_name = 'Sample')
-            sample = client[sample_id]
+            sample = _createObjectByType("Sample", client, sample_id)
             sample.unmarkCreationFlag()
             sample.edit(
                 SampleID = sample_id,
@@ -600,8 +598,7 @@ class ARImport(BaseFolder):
                 priority = priorities[0].getObject()
 
             ar_id = tmpID()
-            client.invokeFactory(id = ar_id, type_name = 'AnalysisRequest')
-            ar = client[ar_id]
+            ar = _createObjectByType("AnalysisRequest", client, ar_id)
             report_dry_matter = False
 
             ar.unmarkCreationFlag()
@@ -661,8 +658,7 @@ class ARImport(BaseFolder):
                 parts_and_services['%s%s' % (part_prefix, _i + 1)] = \
                         p['services']
             else:
-                _id = sample.invokeFactory('SamplePartition', id='tmp')
-                part = sample[_id]
+                part = _createObjectByType("SamplePartition", sample, tmpID())
                 parts[_i]['object'] = part
                 container = None
                 preservation = p['preservation']

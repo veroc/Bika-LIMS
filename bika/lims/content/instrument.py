@@ -5,7 +5,9 @@ from Products.Archetypes.atapi import *
 from Products.Archetypes.references import HoldingReference
 from Products.CMFCore.permissions import View, ModifyPortalContent
 from Products.CMFCore.utils import getToolByName
+from Products.CMFPlone.utils import safe_unicode
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.fields import HistoryAwareReferenceField
 from bika.lims.browser.widgets import DateTimeWidget
 from bika.lims.browser.widgets import RecordsWidget
@@ -167,7 +169,7 @@ def getDataInterfaces(context):
     """ Return the current list of data interfaces
     """
     from bika.lims.exportimport import instruments
-    exims = [('', to_utf8(context.translate(_('None'))))]
+    exims = [('', t(_('None')))]
     for exim_id in instruments.__all__:
         exim = instruments.getExim(exim_id)
         exims.append((exim_id, exim.title))
@@ -194,6 +196,9 @@ class Instrument(ATFolder):
     def _renameAfterCreation(self, check_auto_id=False):
         from bika.lims.idserver import renameAfterCreation
         renameAfterCreation(self)
+
+    def Title(self):
+        return to_utf8(safe_unicode(self.title))
 
     def getDataInterfacesList(self):
         return getDataInterfaces(self)
@@ -233,7 +238,7 @@ class Instrument(ATFolder):
                 for c in bsc(portal_type='Method',
                              inactive_state = 'active')]
         items.sort(lambda x,y:cmp(x[1], y[1]))
-        items.insert(0, ('', to_utf8(self.translate(_('None')))))
+        items.insert(0, ('', t(_('None'))))
         return DisplayList(items)
 
     def getInstrumentTypes(self):

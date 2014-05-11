@@ -1,5 +1,6 @@
 from Products.CMFPlone.utils import safe_unicode
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.content.instrumentmaintenancetask import InstrumentMaintenanceTaskStatuses as mstatus
 from bika.lims.subscribers import doActionFor, skip
@@ -530,6 +531,7 @@ class InstrumentCertificationsView(BikaListingView):
             'getDate': {'title': _('Date')},
             'getValidFrom': {'title': _('Valid from')},
             'getValidTo': {'title': _('Valid to')},
+            'getDocument': {'title': _('Document')},
         }
         self.review_states = [
             {'id':'default',
@@ -539,7 +541,8 @@ class InstrumentCertificationsView(BikaListingView):
                          'getAgency',
                          'getDate',
                          'getValidFrom',
-                         'getValidTo'],
+                         'getValidTo',
+                         'getDocument'],
              'transitions': [{}]},
         ]
         self.allow_edit = False
@@ -567,6 +570,22 @@ class InstrumentCertificationsView(BikaListingView):
                 items[x]['replace']['getAgency'] = ""
                 items[x]['state_class'] = '%s %s' % (items[x]['state_class'], 'internalcertificate')
 
+            items[x]['getDocument'] = ""
+            items[x]['replace']['getDocument'] = ""
+            try:
+                doc = obj.getDocument()
+                if doc:
+                    anchor = "<a href='%s/at_download/Document'>%s</a>" % \
+                            (obj.absolute_url(), _("Download"))
+                    items[x]['getDocument'] = _('Download')
+                    items[x]['replace']['getDocument'] = anchor
+            except:
+                # POSKeyError: 'No blob file'
+                # Show the record, but not the link
+                title = _('Not available')
+                items[x]['getDocument'] = _('Not available')
+                items[x]['replace']['getDocument'] = _('Not available')
+
             uid = obj.UID()
             if uid in valid:
                 # Valid calibration.
@@ -574,7 +593,7 @@ class InstrumentCertificationsView(BikaListingView):
             elif uid == latest:
                 # Latest valid certificate
                 img = "<img title='%s' src='%s/++resource++bika.lims.images/exclamation.png'/>&nbsp;" \
-                % (to_utf8(self.context.translate(_('Out of date'))), self.portal_url)
+                % (t(_('Out of date')), self.portal_url)
                 items[x]['replace']['getValidTo'] = '%s %s' % (items[x]['getValidTo'], img)
                 items[x]['state_class'] = '%s %s' % (items[x]['state_class'], 'inactive outofdate')
             else:
@@ -627,6 +646,8 @@ class ajaxGetInstrumentsAlerts(BrowserView):
         insts = bsc(portal_type='Instrument')
         for i in insts:
             i = i.getObject()
+            if self.portal_workflow.getInfoFor(i,'inactive_state') != 'active':
+                continue
             if i.isOutOfDate():
                 instr = {'uid': i.UID(),
                          'title': i.Title(),

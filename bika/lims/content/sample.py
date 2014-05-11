@@ -2,6 +2,7 @@
 """
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.widgets.datetimewidget import DateTimeWidget
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
@@ -89,7 +90,7 @@ schema = BikaSchema.copy() + Schema((
         widget=ReferenceWidget(
             label=_("Sample Type"),
             render_own_label=True,
-            visible={'edit': 'invisible',
+            visible={'edit': 'visible',
                      'view': 'visible',
                      'add': 'visible'},
             catalog_name='bika_setup_catalog',
@@ -115,7 +116,7 @@ schema = BikaSchema.copy() + Schema((
         widget=ReferenceWidget(
             label=_("Sample Point"),
             render_own_label=True,
-            visible={'edit': 'invisible',
+            visible={'edit': 'visible',
                      'view': 'visible',
                      'add': 'visible'},
             catalog_name='bika_setup_catalog',
@@ -225,7 +226,7 @@ schema = BikaSchema.copy() + Schema((
         write_permission=permissions.ModifyPortalContent,
         widget = DateTimeWidget(
             label=_("Date Received"),
-            visible={'edit': 'invisible',
+            visible={'edit': 'visible',
                      'view': 'visible'},
             render_own_label=True,
         ),

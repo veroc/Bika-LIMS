@@ -1,5 +1,6 @@
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.fields import HistoryAwareReferenceField
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
@@ -15,7 +16,7 @@ from Products.Archetypes.references import HoldingReference
 from Products.ATContentTypes.lib.historyaware import HistoryAwareMixin
 from Products.ATExtensions.ateapi import RecordsField
 from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.utils import safe_unicode
+from Products.CMFPlone.utils import safe_unicode, _createObjectByType
 from zope.interface import implements
 
 
@@ -280,14 +281,13 @@ class Worksheet(BaseFolder, HistoryAwareMixin):
                 continue
             service = analysis.getService()
             _id = self._findUniqueId(service.getKeyword())
-            self.invokeFactory('DuplicateAnalysis', id=_id)
-            duplicate = self[_id]
+            duplicate = _createObjectByType("DuplicateAnalysis", self, _id)
             duplicate.setAnalysis(analysis)
 
             # Set ReferenceAnalysesGroupID (same id for the analyses from
             # the same Reference Sample and same Worksheet)
             # https://github.com/bikalabs/Bika-LIMS/issues/931
-            if not refgid:
+            if not refgid and not analysis.portal_type == 'ReferenceAnalysis':
                 part = analysis.getSamplePartition().id
                 dups = [an.getReferenceAnalysesGroupID()
                         for an in self.getAnalyses()

@@ -1,9 +1,12 @@
+from Products.CMFPlone.utils import _createObjectByType
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.browser.reports.selection_macros import SelectionMacrosView
 from bika.lims.utils import createPdf
 from bika.lims.utils import getUsers, logged_in_client
+from bika.lims.utils import isAttributeHidden
 from bika.lims.utils import to_unicode as _u
 from bika.lims.utils import to_utf8 as _c
 from bika.lims.interfaces import IProductivityReport
@@ -62,6 +65,8 @@ class QualityControlView(BrowserView):
 
         return self.template()
 
+    def isSamplePointHidden(self):
+        return isAttributeHidden('AnalysisRequest', 'SamplePoint')
 
 class AdministrationView(BrowserView):
 
@@ -301,8 +306,7 @@ class SubmitForm(BrowserView):
         if result:
             # Create new report object
             reportid = self.aq_parent.generateUniqueId('Report')
-            self.aq_parent.invokeFactory(id=reportid, type_name="Report")
-            report = self.aq_parent._getOb(reportid)
+            report = _createObjectByType("Report", self.aq_parent, reportid)
             report.edit(Client=clientuid)
             report.processForm()
 

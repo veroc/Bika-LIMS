@@ -90,7 +90,7 @@ def getContainers(instance,
     containertypes = dict([(ct.UID(), ct.Title())
                            for ct in containertypes if ct])
     for ctype_uid, ctype_title in containertypes.items():
-        ctype_title = _u(ctype_title)
+        ctype_title = _c(ctype_title)
         if show_container_types:
             items.append((ctype_uid, "%s: %s"%(cat_str, ctype_title)))
         if show_containers:
@@ -718,6 +718,9 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
         from bika.lims.idserver import renameAfterCreation
         return renameAfterCreation(self)
 
+    def Title(self):
+        return _c(self.title)
+
     security.declarePublic('getDiscountedPrice')
     def getDiscountedPrice(self):
         """ compute discounted price excl. vat """
@@ -821,6 +824,7 @@ class AnalysisService(BaseContent, HistoryAwareMixin):
                              inactive_state = 'active') \
                         if i.getObject().isManualEntryOfResults()]
         items.sort(lambda x,y: cmp(x[1], y[1]))
+        items.insert(0, ('', _("None")))
         return DisplayList(list(items))
 
     def _getAvailableCalculationsDisplayList(self):

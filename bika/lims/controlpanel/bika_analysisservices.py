@@ -1,4 +1,6 @@
+from Products.CMFPlone.utils import _createObjectByType, safe_unicode
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.config import PROJECTNAME
 from bika.lims.idserver import renameAfterCreation
@@ -35,8 +37,8 @@ class AnalysisServiceCopy(BrowserView):
     def create_service(self, src_uid, dst_title, dst_keyword):
         folder = self.context.bika_setup.bika_analysisservices
 
-        tmp_id = folder.invokeFactory('AnalysisService', id=tmpID())
-        _id = renameAfterCreation(folder[tmp_id])
+        dst_service = _createObjectByType("AnalysisService", folder, tmpID())
+        _id = renameAfterCreation(dst_service)
         dst_service = folder[_id]
         dst_service.setKeyword(to_utf8(dst_keyword))
         dst_service.setTitle(to_utf8(dst_title))
@@ -100,19 +102,18 @@ class AnalysisServiceCopy(BrowserView):
             self.savepoint = savepoint()
             sources = self.request.form.get('uids', [])
             titles = self.request.form.get('dst_title', [])
-            keywords = self.request.form.get('dst_title', [])
+            keywords = self.request.form.get('dst_keyword', [])
             self.created = []
             for i, s in enumerate(sources):
                 if not titles[i]:
-                    message = to_utf8(self.context.translate(
-                        _('Validation failed: title is required')))
+                    message = t(_('Validation failed: title is required'))
                     self.context.plone_utils.addPortalMessage(message, 'info')
                     self.savepoint.rollback()
                     self.created = []
                     break
                 if not keywords[i]:
-                    message = to_utf8(self.context.translate(
-                        _('Validation failed: keyword is required')))
+                    message = t(self.context.translate(_(
+                        'Validation failed: keyword is required')))
                     self.context.plone_utils.addPortalMessage(message, 'info')
                     self.savepoint.rollback()
                     self.created = []
@@ -121,16 +122,13 @@ class AnalysisServiceCopy(BrowserView):
                 if title:
                     self.created.append(title)
             if len(self.created) > 1:
-                message = to_utf8(self.context.translate(
-                    _('${items} were successfully created.',
-                      mapping={'items': ', '.join(self.created)})))
+                message = t(_('${items} were successfully created.',
+                              mapping={'items': safe_unicode(', '.join(self.created))}))
             elif len(self.created) == 1:
-                message = to_utf8(self.context.translate(
-                    _('${item} was successfully created.',
-                    mapping={'item': self.created[0]})))
+                message = t(_('${item} was successfully created.',
+                             mapping={'item': safe_unicode(self.created[0])}))
             else:
-                message = to_utf8(self.context.translate(
-                    _('No new items were created.')))
+                message = t(_('No new items were created.'))
             self.context.plone_utils.addPortalMessage(message, 'info')
             self.request.response.redirect(self.context.absolute_url())
 

@@ -2,7 +2,9 @@ from Products.CMFCore.utils import getToolByName
 from bika.lims.browser import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from bika.lims import bikaMessageFactory as _
-from bika.lims.utils import formatDateQuery, formatDateParms, to_utf8
+from bika.lims.utils import t
+from bika.lims.utils \
+    import formatDateQuery, formatDateParms, to_utf8, isAttributeHidden
 from plone.app.layout.globals.interfaces import IViewView
 from zope.interface import implements
 
@@ -88,18 +90,22 @@ class Report(BrowserView):
              'type': 'text'})
 
         # and now lets do the actual report lines
+        col_heads = [_('Client'),
+                     _('Request'),
+                     _('Sample type'),
+                     _('Sample point'),
+                     _('Category'),
+                     _('Analysis'),
+                     _('Result'),
+                     _('Min'),
+                     _('Max'),
+                     _('Status'),
+                     ]
+        if isAttributeHidden('Sample', 'SamplePoint'):
+            col_heads.remove(_('Sample point'))
+
         formats = {'columns': 10,
-                   'col_heads': [_('Client'),
-                                 _('Request'),
-                                 _('Sample type'),
-                                 _('Sample point'),
-                                 _('Category'),
-                                 _('Analysis'),
-                                 _('Result'),
-                                 _('Min'),
-                                 _('Max'),
-                                 _('Status'),
-                                 ],
+                   'col_heads': col_heads,
                    'class': '',
                   }
 
@@ -139,8 +145,11 @@ class Report(BrowserView):
                     else:
                         continue
 
-            spec_min = float(spec_dict['min'])
-            spec_max = float(spec_dict['max'])
+            try:
+                spec_min = float(spec_dict['min'])
+                spec_max = float(spec_dict['max'])
+            except ValueError:
+                continue
             if spec_min <= result <= spec_max:
                 continue
 
@@ -171,8 +180,9 @@ class Report(BrowserView):
             dataitem = {'value': analysis.aq_parent.getSampleTypeTitle()}
             dataline.append(dataitem)
 
-            dataitem = {'value': analysis.aq_parent.getSamplePointTitle()}
-            dataline.append(dataitem)
+            if isAttributeHidden('Sample', 'SamplePoint'):
+                dataitem = {'value': analysis.aq_parent.getSamplePointTitle()}
+                dataline.append(dataitem)
 
             dataitem = {'value': analysis.getCategoryTitle()}
             dataline.append(dataitem)
@@ -235,7 +245,7 @@ class Report(BrowserView):
                 'footings': footlines,
                 'footnotes': footnotes}
 
-        title = to_utf8(self.context.translate(headings['header']))
+        title = t(headings['header'])
 
         return {'report_title': title,
                 'report_data': self.template()}

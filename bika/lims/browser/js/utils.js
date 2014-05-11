@@ -9,6 +9,7 @@ window.bika = window.bika || {
 };
 
 window.bika.lims.portalMessage = function (message) {
+    window.jarn.i18n.loadCatalog("bika");
     var _ = window.jarn.i18n.MessageFactory("bika");
     var str = "<dl class='portalMessage error'>"+
         "<dt>"+_("Error")+"</dt>"+
@@ -51,6 +52,7 @@ window.bika.lims.jsonapi_read = function(request_data, handler) {
 
 $(document).ready(function(){
 
+    window.jarn.i18n.loadCatalog("bika");
     var _ = window.jarn.i18n.MessageFactory("bika");
 
     var curDate = new Date();
@@ -105,11 +107,11 @@ $(document).ready(function(){
     });
 
     // Analysis Service popup trigger
-    $(".service_title").live("click", function(){
+    $('.service_title span:not(.before)').live("click", function(){
         var dialog = $("<div></div>");
         dialog
             .load(window.portal_url + "/analysisservice_popup",
-				{'service_title':$(this).find("span[class^='state']").html(),
+                {'service_title':$(this).closest('td').find("span[class^='state']").html(),
                 "analysis_uid":$(this).parents("tr").attr("uid"),
                 "_authenticator": $("input[name='_authenticator']").val()}
             )

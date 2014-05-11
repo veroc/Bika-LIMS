@@ -317,4 +317,32 @@
         handler="bika.lims.upgrade.to3030.upgrade"
         sortkey="1"
         profile="bika.lims:default"/>
+
+<genericsetup:upgradeStep
+        title="Add missing folder for sugbroups"
+        description=""
+        source="3030"
+        destination="3031"
+        handler="bika.lims.upgrade.to3031.upgrade"
+        sortkey="1"
+        profile="bika.lims:default"/>
+
+<genericsetup:upgradeStep
+        title="Add HiddenAttributes to content registry"
+        description=""
+        source="3031"
+        destination="3032"
+        handler="bika.lims.upgrade.to3032.upgrade"
+        sortkey="1"
+        profile="bika.lims:default"/>
+
+<genericsetup:upgradeStep
+        title="Add HiddenAttributes to content registry"
+        description=""
+        source="3032"
+        destination="3033"
+        handler="bika.lims.upgrade.to3033.upgrade"
+        sortkey="1"
+        profile="bika.lims:default"/>
+
 </configure>

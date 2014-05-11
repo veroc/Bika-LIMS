@@ -1,5 +1,7 @@
 from AccessControl import getSecurityManager
+from Products.CMFPlone.utils import safe_unicode
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.log import LogView
 from bika.lims.content.analysisrequest import schema as AnalysisRequestSchema
 from bika.lims.permissions import *
@@ -21,12 +23,11 @@ class AnalysisRequestLog(LogView):
             childar = hasattr(ar, 'getChildAnalysisRequest') \
                         and ar.getChildAnalysisRequest() or None
             childid = childar and childar.getRequestID() or None
-            message = _('This Analysis Request has been withdrawn and is shown '
-                        'for trace-ability purposes only. Retest: '
-                        '${retest_child_id}.',
-                        mapping={'retest_child_id': childid or ''})
-            self.context.plone_utils.addPortalMessage(
-                to_utf8(self.context.translate(message)), 'warning')
+            message = t(_('This Analysis Request has been withdrawn and is shown '
+                          'for trace-ability purposes only. Retest: '
+                          '${retest_child_id}.',
+                          mapping={'retest_child_id': safe_unicode(childid) or ''}))
+            self.context.plone_utils.addPortalMessage(message, 'warning')
         # If is an AR automatically generated due to a Retraction, show it's
         # parent AR information
         if hasattr(ar, 'getParentAnalysisRequest') \
@@ -36,8 +37,8 @@ class AnalysisRequestLog(LogView):
                         'generated automatically due to '
                         'the retraction of the Analysis '
                         'Request ${retracted_request_id}.',
-                        mapping={'retracted_request_id': par.getRequestID()})
+                        mapping={'retracted_request_id': safe_unicode(par.getRequestID())})
             self.context.plone_utils.addPortalMessage(
-                to_utf8(self.context.translate(message)), 'info')
+                t(message), 'info')
         template = LogView.__call__(self)
         return template

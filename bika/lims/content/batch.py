@@ -1,5 +1,6 @@
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaFolderSchema
 from bika.lims.interfaces import IBatch
@@ -295,10 +296,7 @@ class Batch(ATFolder):
     def getAnalysisRequests(self):
         """ Return all the Analysis Requests linked to the Batch
         """
-        bc = getToolByName(self, 'bika_catalog')
-        uid = self.UID()
-        return [b.getObject() for b in bc(portal_type='AnalysisRequest',
-                                          getBatchUID=uid)]
+        return self.getBackReferences("AnalysisRequestBatch")
 
     def isOpen(self):
         """ Returns true if the Batch is in 'open' state

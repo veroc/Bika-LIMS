@@ -1,6 +1,8 @@
 # coding=utf-8
 from AccessControl import getSecurityManager
+from Products.CMFPlone.utils import _createObjectByType
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims import EditResults, EditWorksheet, ManageWorksheets
 from bika.lims import PMF, logger
 from bika.lims.browser import BrowserView
@@ -123,6 +125,7 @@ class WorksheetWorkflowAction(WorkflowAction):
         instruments = form.get('Instrument', [{}])[0]
         analysts = self.request.form.get('Analyst', [{}])[0]
         selected = WorkflowAction._get_selected_items(self)
+        workflow = getToolByName(self.context, 'portal_workflow')
         rc = getToolByName(self.context, REFERENCE_CATALOG)
         sm = getSecurityManager()
 
@@ -604,8 +607,7 @@ class ManageResultsView(BrowserView):
             tool = getToolByName(self.context, REFERENCE_CATALOG)
             if analysis_uid:
                 analysis = tool.lookupObject(analysis_uid)
-                attachmentid = ws.invokeFactory("Attachment", id=tmpID())
-                attachment = ws._getOb(attachmentid)
+                attachment = _createObjectByType("Attachment", ws, tmpID())
                 attachment.edit(
                     AttachmentFile=this_file,
                     AttachmentType=self.request.get('AttachmentType', ''),
@@ -630,8 +632,7 @@ class ManageResultsView(BrowserView):
                     if not review_state in ['assigned', 'sample_received', 'to_be_verified']:
                         continue
 
-                    attachmentid = ws.invokeFactory("Attachment", id=tmpID())
-                    attachment = ws._getOb(attachmentid)
+                    attachment = _createObjectByType("Attachment", ws, tmpID())
                     attachment.edit(
                         AttachmentFile = this_file,
                         AttachmentType = self.request.get('AttachmentType', ''),
@@ -781,6 +782,9 @@ class AddAnalysesView(BikaListingView):
             'getRequestID': {
                 'title': _('Request ID'),
                 'index': 'getRequestID'},
+            'getPriority': {
+                'title': _('Priority'),
+                'index': 'getPriority'},
             'CategoryTitle': {
                 'title': _('Category'),
                 'index':'getCategoryTitle'},
@@ -803,6 +807,7 @@ class AddAnalysesView(BikaListingView):
              'columns':['Client',
                         'getClientOrderNumber',
                         'getRequestID',
+                        'getPriority',
                         'CategoryTitle',
                         'Title',
                         'getDateReceived',
@@ -828,12 +833,12 @@ class AddAnalysesView(BikaListingView):
                 self.context.applyWorksheetTemplate(wst)
                 if len(self.context.getLayout()) != len(layout):
                     self.context.plone_utils.addPortalMessage(
-                        to_utf8(translate(PMF("Changes saved."))))
+                        t(PMF("Changes saved.")))
                     self.request.RESPONSE.redirect(self.context.absolute_url() +
                                                    "/manage_results")
                 else:
                     self.context.plone_utils.addPortalMessage(
-                        to_utf8(translate(_("No analyses were added to this worksheet."))))
+                        t(_("No analyses were added to this worksheet.")))
                     self.request.RESPONSE.redirect(self.context.absolute_url() +
                                                    "/add_analyses")
 
@@ -862,13 +867,12 @@ class AddAnalysesView(BikaListingView):
             client = obj.aq_parent.aq_parent
             items[x]['getClientOrderNumber'] = obj.getClientOrderNumber()
             items[x]['getDateReceived'] = self.ulocalized_time(obj.getDateReceived())
-
             DueDate = obj.getDueDate()
             items[x]['getDueDate'] = self.ulocalized_time(DueDate)
             if DueDate < DateTime():
                 items[x]['after']['DueDate'] = '<img width="16" height="16" src="%s/++resource++bika.lims.images/late.png" title="%s"/>' % \
                     (self.context.absolute_url(),
-                     to_utf8(self.context.translate(_("Late Analysis"))))
+                     t(_("Late Analysis")))
             items[x]['CategoryTitle'] = service.getCategory() and service.getCategory().Title() or ''
 
             if getSecurityManager().checkPermission(EditResults, obj.aq_parent):
@@ -878,11 +882,15 @@ class AddAnalysesView(BikaListingView):
             items[x]['getRequestID'] = obj.aq_parent.getRequestID()
             items[x]['replace']['getRequestID'] = "<a href='%s'>%s</a>" % \
                  (url, items[x]['getRequestID'])
+            priority = obj.aq_inner.aq_parent.getPriority()
+            items[x]['getPriority'] = ''
+
 
             items[x]['Client'] = client.Title()
             if hideclientlink == False:
                 items[x]['replace']['Client'] = "<a href='%s'>%s</a>" % \
                     (client.absolute_url(), client.Title())
+
         return items
 
     def getServices(self):
@@ -1258,7 +1266,7 @@ class ajaxGetWorksheetReferences(ReferenceSamplesView):
 
                 after_icons = "<a href='%s' target='_blank'><img src='++resource++bika.lims.images/referencesample.png' title='%s: %s'></a>" % \
                     (obj.absolute_url(), \
-                     to_utf8(translate(_("Reference sample"))), obj.Title())
+                     t(_("Reference sample")), obj.Title())
                 items[x]['before']['ID'] = after_icons
 
                 new_items.append(items[x])
@@ -1272,7 +1280,7 @@ class ajaxGetWorksheetReferences(ReferenceSamplesView):
         self.service_uids = self.request.get('service_uids', '').split(",")
         self.control_type = self.request.get('control_type', '')
         if not self.control_type:
-            return to_utf8(self.context.translate(_("No control type specified")))
+            return t(_("No control type specified"))
         return super(ajaxGetWorksheetReferences, self).contents_table()
 
 class ExportView(BrowserView):
@@ -1285,14 +1293,14 @@ class ExportView(BrowserView):
         instrument = self.context.getInstrument()
         if not instrument:
             self.context.plone_utils.addPortalMessage(
-                to_utf8(translate(_("You must select an instrument"))), 'info')
+                t(_("You must select an instrument")), 'info')
             self.request.RESPONSE.redirect(self.context.absolute_url())
             return
 
         exim = instrument.getDataInterface()
         if not exim:
             self.context.plone_utils.addPortalMessage(
-                to_utf8(translate(_("Instrument has no data interface selected"))), 'info')
+                t(_("Instrument has no data interface selected")), 'info')
             self.request.RESPONSE.redirect(self.context.absolute_url())
             return
 
@@ -1304,7 +1312,7 @@ class ExportView(BrowserView):
         # search instruments module for 'exim' module
         if not hasattr(instruments, exim):
             self.context.plone_utils.addPortalMessage(
-                to_utf8(translate(_("Instrument exporter not found"))), 'error')
+                t(_("Instrument exporter not found")), 'error')
             self.request.RESPONSE.redirect(self.context.absolute_url())
             return
 

@@ -1,4 +1,5 @@
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims import PMF
 from bika.lims.browser.bika_listing import WorkflowAction
 from bika.lims.browser.publish import doPublish
@@ -17,7 +18,7 @@ from email.Utils import formataddr
 from Products.Archetypes.config import REFERENCE_CATALOG
 from Products.Archetypes.event import ObjectInitializedEvent
 from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.utils import safe_unicode
+from Products.CMFPlone.utils import safe_unicode, _createObjectByType
 
 import json
 import plone
@@ -38,6 +39,10 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         form = self.request.form
         plone.protect.CheckAuthenticator(form)
         action, came_from = WorkflowAction._get_form_workflow_action(self)
+        if type(action) in (list, tuple):
+            action = action[0]
+        if type(came_from) in (list, tuple):
+            came_from = came_from[0]
         # Call out to the workflow action method
         # Use default bika_listing.py/WorkflowAction for other transitions
         method_name = 'workflow_action_' + action
@@ -58,8 +63,7 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         # add missing parts
         if nr_parts > nr_existing:
             for i in range(nr_parts - nr_existing):
-                _id = sample.invokeFactory('SamplePartition', id=tmpID())
-                part = sample[_id]
+                part = _createObjectByType("SamplePartition", sample, tmpID())
                 part.setDateReceived = DateTime()
                 part.processForm()
         # remove excess parts
@@ -183,12 +187,12 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         message = None
         if len(transitioned) > 1:
             message = _('${items} are waiting to be received.',
-                        mapping={'items': ', '.join(transitioned)})
+                        mapping={'items': safe_unicode(', '.join(transitioned))})
             message = self.context.translate(message)
             self.context.plone_utils.addPortalMessage(message, 'info')
         elif len(transitioned) == 1:
             message = _('${item} is waiting to be received.',
-                        mapping={'item': ', '.join(transitioned)})
+                        mapping={'item': safe_unicode(', '.join(transitioned))})
             message = self.context.translate(message)
             self.context.plone_utils.addPortalMessage(message, 'info')
         if not message:
@@ -283,7 +287,7 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         hasInterims = {}
         # check that the form values match the database
         # save them if not.
-        for uid, result in self.request.form['Result'][0].items():
+        for uid, result in self.request.form.get('Result', [{}])[0].items():
             # if the AR has ReportDryMatter set, get dry_result from form.
             dry_result = ''
             if hasattr(self.context, 'getReportDryMatter') \
@@ -418,8 +422,8 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
                                action,
                                [self.context, ])()
         if len(transitioned) == 1:
-            message = to_utf8(self.context.translate('${items} published.',
-                                mapping={'items': ', '.join(transitioned)}))
+            message = t('${items} published.',
+                        mapping={'items': safe_unicode(', '.join(transitioned))})
         else:
             message = self.context.translate(_("No items were published"))
         self.context.plone_utils.addPortalMessage(message, 'info')
@@ -516,7 +520,7 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
             message = self.context.translate(
                     _('Unable to send an email to alert lab '
                       'client contacts that the Analysis Request has been '
-                      'retracted: ${error}', mapping={'error': msg}))
+                      'retracted: ${error}', mapping={'error': safe_unicode(msg)}))
             self.context.plone_utils.addPortalMessage(message, 'warning')
 
         message = self.context.translate('${items} invalidated.',
@@ -545,8 +549,7 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         return doPublish(context, request, action, analysis_requests)
 
     def cloneAR(self, ar):
-        _id = ar.aq_parent.invokeFactory('AnalysisRequest', id=tmpID())
-        newar = ar.aq_parent[_id]
+        newar = _createObjectByType("AnalysisRequest", ar.aq_parent, tmpID())
         newar.title = ar.title
         newar.description = ar.description
         newar.setContact(ar.getContact())
@@ -578,8 +581,7 @@ class AnalysisRequestWorkflowAction(WorkflowAction):
         # Set the results for each AR analysis
         ans = ar.getAnalyses(full_objects=True)
         for an in ans:
-            newar.invokeFactory("Analysis", id=an.getKeyword())
-            nan = newar[an.getKeyword()]
+            nan = _createObjectByType("Analysis", newar, an.getKeyword())
             nan.setService(an.getService())
             nan.setCalculation(an.getCalculation())
             nan.setInterimFields(an.getInterimFields())

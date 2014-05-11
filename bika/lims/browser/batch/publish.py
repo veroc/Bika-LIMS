@@ -1,4 +1,5 @@
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.permissions import *
 from bika.lims.utils import createPdf
@@ -37,9 +38,11 @@ class PublishView(BrowserView):
             proxies = pc(portal_type='Client', UID=client_uid)
         if proxies:
             self.client = proxies[0].getObject()
-            client_address = self.client.getPostalAddress() \
-                or self.contact.getBillingAddress() \
-                or self.contact.getPhysicalAddress()
+            client_address = self.client.getPostalAddress()
+            if self.contact and not client_address:
+                client_address = self.contact.getBillingAddress()
+                if not client_address:
+                    client_address = self.contact.getPhysicalAddress()
             if client_address:
                 _keys = ['address', 'city', 'state', 'zip', 'country']
                 _list = [client_address.get(v) for v in _keys if client_address.get(v)]

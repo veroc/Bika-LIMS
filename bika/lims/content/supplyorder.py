@@ -1,5 +1,6 @@
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.widgets import DateTimeWidget
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
@@ -155,9 +156,9 @@ class SupplyOrder(BaseFolder):
             [float(obj.getTotal())
              for obj in self.objectValues('SupplyOrderItem')])
 
-    security.declareProtected(View, 'getVAT')
+    security.declareProtected(View, 'getVATTotal')
 
-    def getVAT(self):
+    def getVATTotal(self):
         """ Compute VAT """
         return self.getTotal() - self.getSubtotal()
 

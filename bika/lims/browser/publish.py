@@ -1,7 +1,8 @@
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.config import POINTS_OF_CAPTURE
-from bika.lims.interfaces import IFieldIcons
+from bika.lims.interfaces import IResultOutOfRange
 from bika.lims.utils import encode_header, createPdf, attachPdf
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -11,7 +12,7 @@ from os.path import join
 from pkg_resources import resource_filename
 from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.WorkflowCore import WorkflowException
-from Products.CMFPlone.utils import safe_unicode
+from Products.CMFPlone.utils import safe_unicode, _createObjectByType
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from smtplib import SMTPRecipientsRefused
 from smtplib import SMTPServerDisconnected
@@ -82,18 +83,16 @@ class doPublish(BrowserView):
 
     def ResultOutOfRange(self, analysis):
         """ Template wants to know, is this analysis out of range?
-        We scan IFieldIcons adapters, and return True if any IAnalysis
+        We scan IResultOutOfRange adapters, and return True if any IAnalysis
         adapters trigger a result.
         """
-        adapters = getAdapters((analysis, ), IFieldIcons)
+        adapters = getAdapters((analysis, ), IResultOutOfRange)
         bsc = getToolByName(self.context, "bika_setup_catalog")
         spec = self.get_active_spec_dict(analysis)
         for name, adapter in adapters:
-            # obj = self.get_active_spec_object()
             if not spec:
                 return False
-            alerts = adapter(specification=spec)
-            if alerts and analysis.UID() in alerts:
+            if adapter(specification=spec):
                 return True
 
     def getAnalysisSpecsStr(self, spec):
@@ -170,17 +169,26 @@ class doPublish(BrowserView):
             }
             ### Primary contact attributes
             contact = ar.getContact()
-            self.contact = {
-                'getFullname': to_utf8(contact.getFullname()),
-                'getEmailAddress': to_utf8(contact.getEmailAddress()),
-                'getPublicationPreference': contact.getPublicationPreference(),
-            }
+            if contact:
+                self.contact = {
+                    'getFullname': to_utf8(contact.getFullname()),
+                    'getEmailAddress': to_utf8(contact.getEmailAddress()),
+                    'getPublicationPreference': contact.getPublicationPreference(),
+                }
+            else:
+                self.contact = {
+                    'getFullname': "",
+                    'getEmailAddress': "",
+                    'getPublicationPreference': "",
+                }
 
             ### Client attributes
             client = ar.aq_parent
-            client_address = client.getPostalAddress() \
-                or contact.getBillingAddress() \
-                or contact.getPhysicalAddress()
+            client_address = client.getPostalAddress()
+            if contact and not client_address:
+                client_address = contact.getBillingAddress()
+                if not client_address:
+                    client_address = contact.getPhysicalAddress()
             if client_address:
                 _keys = ['address', 'city', 'state', 'zip', 'country']
                 _list = ["<div>%s</div>" % client_address.get(v) for v in _keys
@@ -261,20 +269,24 @@ class doPublish(BrowserView):
             ar_results = ar_results.replace(ar_css, pdf_css)
             pdf_report = createPdf(ar_results, pdf_outfile, css=pdf_css)
 
+            if contact:
+                recipients = [{'UID': contact.UID(),
+                              'Username': to_utf8(contact.getUsername()),
+                              'Fullname': to_utf8(contact.getFullname()),
+                              'EmailAddress': to_utf8(contact.getEmailAddress()),
+                              'PublicationModes': contact.getPublicationPreference()
+                              }]
+            else:
+                recipients = []
+
             if pdf_report:
                 reportid = self.context.generateUniqueId('ARReport')
-                ar.invokeFactory(id=reportid, type_name="ARReport")
-                report = ar._getOb(reportid)
+                report = _createObjectByType("ARReport", ar, reportid)
                 report.edit(
                     AnalysisRequest=ar.UID(),
                     Pdf=pdf_report,
                     Html=ar_results,
-                    Recipients=[{'UID': contact.UID(),
-                                'Username': to_utf8(contact.getUsername()),
-                                'Fullname': to_utf8(contact.getFullname()),
-                                'EmailAddress': to_utf8(contact.getEmailAddress()),
-                                'PublicationModes': contact.getPublicationPreference()
-                                 }]
+                    Recipients=recipients
                 )
                 report.unmarkCreationFlag()
                 from bika.lims.idserver import renameAfterCreation
@@ -510,7 +522,8 @@ class doPublish(BrowserView):
 
         # Contact and CC's
         contact = ar.getContact()
-        recips.append({'title': to_utf8(contact.Title()),
+        if contact:
+            recips.append({'title': to_utf8(contact.Title()),
                        'email': contact.getEmailAddress(),
                        'pubpref': contact.getPublicationPreference()})
         for cc in ar.getCCContact():

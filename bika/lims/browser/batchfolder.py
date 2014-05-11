@@ -1,6 +1,7 @@
 from bika.lims.permissions import AddBatch
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from operator import itemgetter
 from plone.app.content.browser.interfaces import IFolderContentsView
 from bika.lims.browser import BrowserView
@@ -16,7 +17,11 @@ class BatchFolderContentsView(BikaListingView):
     def __init__(self, context, request):
         super(BatchFolderContentsView, self).__init__(context, request)
         self.catalog = 'bika_catalog'
-        self.contentFilter = {'portal_type': 'Batch'}
+        self.contentFilter = {
+            'portal_type': 'Batch',
+            'sort_on': 'created',
+            'sort_order': 'reverse',
+        }
         self.context_actions = {}
         self.icon = self.portal_url + "/++resource++bika.lims.images/batch_big.png"
         self.title = _("Batches")

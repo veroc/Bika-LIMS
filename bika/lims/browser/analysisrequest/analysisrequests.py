@@ -1,5 +1,6 @@
 from AccessControl import getSecurityManager
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.utils import getUsers
 from bika.lims.permissions import *
@@ -88,8 +89,8 @@ class AnalysisRequestsView(BikaListingView):
             'SamplingDeviation': {'title': _('Sampling Deviation'),
                                   'toggle': False},
             'Priority': {'title': _('Priority'),
-                            'index': 'Priority',
-                            'toggle': True},
+                            'toggle': True,
+                            'sortable': False},
             'AdHoc': {'title': _('Ad-Hoc'),
                       'toggle': False},
             'SamplingDate': {'title': _('Sampling Date'),
@@ -423,7 +424,7 @@ class AnalysisRequestsView(BikaListingView):
             {'id': 'assigned',
              'title': "<img title='%s'\
                        src='%s/++resource++bika.lims.images/assigned.png'/>" % (
-                       to_utf8(self.context.translate(_("Assigned"))), self.portal_url),
+                       t(_("Assigned")), self.portal_url),
              'contentFilter': {'worksheetanalysis_review_state': 'assigned',
                                'review_state': ('sample_received', 'to_be_verified',
                                                 'attachment_due', 'verified',
@@ -468,7 +469,7 @@ class AnalysisRequestsView(BikaListingView):
             {'id': 'unassigned',
              'title': "<img title='%s'\
                        src='%s/++resource++bika.lims.images/unassigned.png'/>" % (
-                       to_utf8(self.context.translate(_("Unassigned"))), self.portal_url),
+                       t(_("Unassigned")), self.portal_url),
              'contentFilter': {'worksheetanalysis_review_state': 'unassigned',
                                'review_state': ('sample_received', 'to_be_verified',
                                                 'attachment_due', 'verified',
@@ -540,7 +541,6 @@ class AnalysisRequestsView(BikaListingView):
             if (hideclientlink is False):
                 items[x]['replace']['Client'] = "<a href='%s'>%s</a>" % \
                     (obj.aq_parent.absolute_url(), obj.aq_parent.Title())
-            # noinspection PyUnresolvedReferences
             items[x]['Creator'] = self.user_fullname(obj.Creator())
             items[x]['getRequestID'] = obj.getRequestID()
             items[x]['replace']['getRequestID'] = "<a href='%s'>%s</a>" % \
@@ -561,17 +561,14 @@ class AnalysisRequestsView(BikaListingView):
             items[x]['SubGroup'] = val.Title() if val else ''
 
             samplingdate = obj.getSample().getSamplingDate()
-            # noinspection PyUnresolvedReferences
             items[x]['SamplingDate'] = self.ulocalized_time(samplingdate, long_format=1)
-            # noinspection PyUnresolvedReferences
             items[x]['getDateReceived'] = self.ulocalized_time(obj.getDateReceived())
-            # noinspection PyUnresolvedReferences
             items[x]['getDatePublished'] = self.ulocalized_time(obj.getDatePublished())
 
             deviation = sample.getSamplingDeviation()
             items[x]['SamplingDeviation'] = deviation and deviation.Title() or ''
             priority = obj.getPriority()
-            items[x]['Priority'] = priority and priority.Title() or ''
+            items[x]['Priority'] = ''
 
             items[x]['getStorageLocation'] = sample.getStorageLocation() and sample.getStorageLocation().Title() or ''
             items[x]['AdHoc'] = sample.getAdHoc() and True or ''
@@ -580,46 +577,40 @@ class AnalysisRequestsView(BikaListingView):
             state = workflow.getInfoFor(obj, 'worksheetanalysis_review_state')
             if state == 'assigned':
                 after_icons += "<img src='%s/++resource++bika.lims.images/worksheet.png' title='%s'/>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("All analyses assigned"))))
+                    (self.portal_url, t(_("All analyses assigned")))
             if workflow.getInfoFor(obj, 'review_state') == 'invalid':
                 after_icons += "<img src='%s/++resource++bika.lims.images/delete.png' title='%s'/>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("Results have been withdrawn"))))
+                    (self.portal_url, t(_("Results have been withdrawn")))
             if obj.getLate():
                 after_icons += "<img src='%s/++resource++bika.lims.images/late.png' title='%s'>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("Late Analyses"))))
-            # noinspection PyCallingNonCallable
+                    (self.portal_url, t(_("Late Analyses")))
             if samplingdate > DateTime():
                 after_icons += "<img src='%s/++resource++bika.lims.images/calendar.png' title='%s'>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("Future dated sample"))))
+                    (self.portal_url, t(_("Future dated sample")))
             if obj.getInvoiceExclude():
                 after_icons += "<img src='%s/++resource++bika.lims.images/invoice_exclude.png' title='%s'>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("Exclude from invoice"))))
+                    (self.portal_url, t(_("Exclude from invoice")))
             if sample.getSampleType().getHazardous():
                 after_icons += "<img src='%s/++resource++bika.lims.images/hazardous.png' title='%s'>" % \
-                    (self.portal_url, to_utf8(self.context.translate(_("Hazardous"))))
+                    (self.portal_url, t(_("Hazardous")))
             if after_icons:
                 items[x]['after']['getRequestID'] = after_icons
 
-            # noinspection PyUnresolvedReferences
             items[x]['Created'] = self.ulocalized_time(obj.created())
 
             SamplingWorkflowEnabled =\
                 self.context.bika_setup.getSamplingWorkflowEnabled()
 
-            # noinspection PyCallingNonCallable
             if not samplingdate > DateTime() and SamplingWorkflowEnabled:
-                # noinspection PyUnresolvedReferences
                 datesampled = self.ulocalized_time(sample.getDateSampled())
 
                 if not datesampled:
-                    # noinspection PyUnresolvedReferences,PyCallingNonCallable
                     datesampled = self.ulocalized_time(
                         DateTime(),
                         long_format=1)
                     items[x]['class']['getDateSampled'] = 'provisional'
                 sampler = sample.getSampler().strip()
                 if sampler:
-                    # noinspection PyUnresolvedReferences
                     items[x]['replace']['getSampler'] = self.user_fullname(sampler)
                 if 'Sampler' in member.getRoles() and not sampler:
                     sampler = member.id
@@ -630,13 +621,16 @@ class AnalysisRequestsView(BikaListingView):
             items[x]['getDateSampled'] = datesampled
             items[x]['getSampler'] = sampler
 
-            items[x]['ClientContact'] = obj.getContact().Title()
-            items[x]['replace']['ClientContact'] = "<a href='%s'>%s</a>" % \
-                (obj.getContact().absolute_url(), obj.getContact().Title())
+            contact = obj.getContact()
+            if contact:
+                items[x]['ClientContact'] = contact.Title()
+                items[x]['replace']['ClientContact'] = "<a href='%s'>%s</a>" % \
+                    (contact.absolute_url(), contact.Title())
+            else:
+                items[x]['ClientContact'] = ""
 
             # sampling workflow - inline edits for Sampler and Date Sampled
             checkPermission = self.context.portal_membership.checkPermission
-            # noinspection PyCallingNonCallable
             if checkPermission(SampleSample, obj) \
                 and not samplingdate > DateTime():
                 items[x]['required'] = ['getSampler', 'getDateSampled']
@@ -667,7 +661,6 @@ class AnalysisRequestsView(BikaListingView):
                 items[x]['choices'] = {'getPreserver': users}
                 preserver = username in preservers.keys() and username or ''
                 items[x]['getPreserver'] = preserver
-                # noinspection PyUnresolvedReferences,PyCallingNonCallable
                 items[x]['getDatePreserved'] = self.ulocalized_time(
                     DateTime(),
                     long_format=1)
@@ -689,12 +682,10 @@ class AnalysisRequestsView(BikaListingView):
                     if self_submitted:
                         items[x]['after']['state_title'] = \
                              "<img src='++resource++bika.lims.images/submitted-by-current-user.png' title='%s'/>" % \
-                             (to_utf8(self.context.translate(_("Cannot verify: Submitted by current user"))))
+                             t(_("Cannot verify: Submitted by current user"))
                 except Exception:
                     pass
 
-        # Hide Preservation/Sampling workflow actions if the edit columns
-        # are not displayed.
         toggle_cols = self.get_toggle_cols()
         new_states = []
         for i, state in enumerate(self.review_states):

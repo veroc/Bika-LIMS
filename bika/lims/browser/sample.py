@@ -3,12 +3,14 @@ from DateTime import DateTime
 from Products.Archetypes.config import REFERENCE_CATALOG
 from Products.Archetypes.public import DisplayList
 from Products.CMFCore.utils import getToolByName
+from Products.CMFPlone.utils import _createObjectByType
 from bika.lims.adapters.widgetvisibility import WidgetVisibility as _WV
 from bika.lims.browser import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from bika.lims import EditSample
 from bika.lims import PMF
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser.analyses import AnalysesView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.browser.header_table import HeaderTableView
@@ -18,9 +20,11 @@ from bika.lims.utils import changeWorkflowState, tmpID
 from bika.lims.utils import changeWorkflowState, to_unicode
 from bika.lims.utils import getUsers
 from bika.lims.utils import isActive
-from bika.lims.utils import to_utf8
+from bika.lims.utils import to_utf8, getHiddenAttributesForClass
 from operator import itemgetter
 from plone.app.layout.globals.interfaces import IViewView
+from plone.registry.interfaces import IRegistry
+from zope.component import queryUtility
 from zope.interface import implements
 from Products.ZCTextIndex.ParseTree import ParseError
 import json
@@ -252,9 +256,7 @@ class createSamplePartition(BrowserView):
     """
     def __call__(self):
         wf = getToolByName(self.context, 'portal_workflow')
-        _id = self.context.invokeFactory(type_name = 'SamplePartition',
-                                         id=tmpID())
-        part = self.context[_id]
+        part = _createObjectByType("SamplePartition", self.context, tmpID())
         part.processForm()
         SamplingWorkflowEnabled = part.bika_setup.getSamplingWorkflowEnabled()
         ## We force the object to have the same state as the parent
@@ -276,9 +278,13 @@ class SampleAnalysesView(AnalysesView):
             self.contentFilter[k] = v
         self.columns['Request'] = {'title': _("Request"),
                                    'sortable':False}
-        # Add Request column
+        self.columns['Priority'] = {'title': _("Priority"),
+                                   'sortable':False}
+        # Add Request and Priority columns
         pos = self.review_states[0]['columns'].index('Service') + 1
         self.review_states[0]['columns'].insert(pos, 'Request')
+        pos += 1
+        self.review_states[0]['columns'].insert(pos, 'Priority')
 
     def folderitems(self):
         self.contentsMethod = self.context.getAnalyses
@@ -290,6 +296,7 @@ class SampleAnalysesView(AnalysesView):
             ar = obj.aq_parent
             items[x]['replace']['Request'] = \
                 "<a href='%s'>%s</a>"%(ar.absolute_url(), ar.Title())
+            items[x]['replace']['Priority'] = ' ' #TODO this space is required for it to work
         return items
 
 class SampleEdit(BrowserView):
@@ -679,12 +686,12 @@ class SamplesView(BikaListingView):
             if obj.getSampleType().getHazardous():
                 after_icons += "<img title='%s' " \
                     "src='%s/++resource++bika.lims.images/hazardous.png'>" % \
-                    (to_utf8(translate(_("Hazardous"))),
+                    (t(_("Hazardous")),
                      self.portal_url)
             if obj.getSamplingDate() > DateTime():
                 after_icons += "<img title='%s' " \
                     "src='%s/++resource++bika.lims.images/calendar.png' >" % \
-                    (to_utf8(translate(_("Future dated sample"))),
+                    (t(_("Future dated sample")),
                      self.portal_url)
             if after_icons:
                 items[x]['after']['getSampleID'] = after_icons
@@ -808,7 +815,9 @@ class ajaxGetSampleTypeInfo(BrowserView):
 
 
 class WidgetVisibility(_WV):
-
+    """The values returned here do not decide the field order, only their
+    visibility.  The field order is set in the schema.
+    """
     def __call__(self):
         ret = super(WidgetVisibility, self).__call__()
 

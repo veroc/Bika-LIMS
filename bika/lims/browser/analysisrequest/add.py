@@ -1,20 +1,21 @@
 import json
 
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import t
 from bika.lims.browser import BrowserView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.content.analysisrequest import schema as AnalysisRequestSchema
 from bika.lims.interfaces import IAnalysisRequestAddView
 from bika.lims.browser.analysisrequest import AnalysisRequestViewView
-from bika.lims.jsonapi import load_brain_metadata
-from bika.lims.jsonapi import load_field_values
-from bika.lims.utils import to_utf8
+from bika.lims.utils import getHiddenAttributesForClass
 from bika.lims.utils import tmpID
 from bika.lims.workflow import doActionFor
+from magnitude import mg
 from plone.app.layout.globals.interfaces import IViewView
 from Products.Archetypes import PloneMessageFactory as PMF
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from Products.CMFPlone.utils import _createObjectByType, safe_unicode
 from zope.component import getAdapter
 from zope.interface import implements
 import plone
@@ -49,7 +50,20 @@ class AnalysisRequestAddView(AnalysisRequestViewView):
 
     def getWidgetVisibility(self):
         adapter = getAdapter(self.context, name='getWidgetVisibility')
-        return adapter()
+        ret = adapter()
+        ordered_ret = {}
+        # respect schemaextender's re-ordering of fields, and
+        # remove hidden attributes.
+        hiddenattributes = getHiddenAttributesForClass('AnalysisRequest')
+        schema_fields = [f.getName() for f in self.context.Schema().fields()]
+        for mode, state_field_lists in ret.items():
+            ordered_ret[mode] = {}
+            for statename, state_fields in state_field_lists.items():
+                ordered_ret[mode][statename] = \
+                    [field for field in schema_fields
+                     if field in state_fields
+                     and field not in hiddenattributes]
+        return ordered_ret
 
     def partitioned_services(self):
         bsc = getToolByName(self.context, 'bika_setup_catalog')
@@ -57,9 +71,10 @@ class AnalysisRequestAddView(AnalysisRequestViewView):
         for service in bsc(portal_type='AnalysisService'):
             service = service.getObject()
             if service.getPartitionSetup() \
-                or service.getSeparate():
+                    or service.getSeparate():
                 ps.append(service.UID())
         return json.dumps(ps)
+
 
 class SecondaryARSampleInfo(BrowserView):
     """Return fieldnames and pre-digested values for Sample fields which
@@ -67,6 +82,7 @@ class SecondaryARSampleInfo(BrowserView):
     """
 
     def __init__(self, context, request):
+        super(SecondaryARSampleInfo, self).__init__(context, request)
         self.context = context
         self.request = request
 
@@ -79,8 +95,11 @@ class SecondaryARSampleInfo(BrowserView):
         wv = adapter()
         fieldnames = wv.get('secondary', {}).get('invisible', [])
         ret = []
+        hiddenattributes = getHiddenAttributesForClass('AnalysisRequest')
         for fieldname in fieldnames:
             if fieldname in sample_schema:
+                if fieldname in hiddenattributes:
+                    continue
                 fieldvalue = sample_schema[fieldname].getAccessor(sample)()
                 if fieldvalue is None:
                     fieldvalue = ''
@@ -97,7 +116,8 @@ class SecondaryARSampleInfo(BrowserView):
 class ajaxExpandCategory(BikaListingView):
     """ ajax requests pull this view for insertion when category header
     rows are clicked/expanded. """
-    template = ViewPageTemplateFile("templates/analysisrequest_analysisservices.pt")
+    template = ViewPageTemplateFile(
+        "templates/analysisrequest_analysisservices.pt")
 
     def __call__(self):
         plone.protect.CheckAuthenticator(self.request.form)
@@ -107,17 +127,14 @@ class ajaxExpandCategory(BikaListingView):
         return self.template()
 
     def bulk_discount_applies(self):
+        client = None
         if self.context.portal_type == 'AnalysisRequest':
             client = self.context.aq_parent
         elif self.context.portal_type == 'Batch':
-            bc = getToolByName(self.context, 'bika_catalog')
-            proxies = bc(portal_type="AnalysisRequest", getBatchUID=self.context.UID())
-            client = proxies[0].getObject()
+            client = self.context.getClient()
         elif self.context.portal_type == 'Client':
             client = self.context
-        else:
-            return False
-        return client.getBulkDiscount()
+        return client.getBulkDiscount() if client is not None else False
 
     def Services(self, poc, CategoryUID):
         """ return a list of services brains """
@@ -152,8 +169,7 @@ class ajaxAnalysisRequestSubmit():
 
         def error(field=None, column=None, message=None):
             if not message:
-                message = to_utf8(self.context.translate(
-                    PMF('Input is required but no input given.')))
+                message = t(PMF('Input is required but no input given.'))
             if (column or field):
                 error_key = " %s.%s" % (int(column) + 1, field or '')
             else:
@@ -173,7 +189,7 @@ class ajaxAnalysisRequestSubmit():
             columns.append(column)
 
         if len(columns) == 0:
-            error(message=to_utf8(self.context.translate(_("No analyses have been selected"))))
+            error(message=t(_("No analyses have been selected")))
             return json.dumps({'errors': errors})
 
         # Now some basic validation
@@ -187,7 +203,7 @@ class ajaxAnalysisRequestSubmit():
 
             # Secondary ARs don't have sample fields present in the form data
             # if 'Sample_uid' in ar and ar['Sample_uid']:
-            #     adapter = getAdapter(self.context, name='getWidgetVisibility')
+            # adapter = getAdapter(self.context, name='getWidgetVisibility')
             #     wv = adapter().get('secondary', {}).get('invisible', [])
             #     required_fields = [x for x in required_fields if x not in wv]
 
@@ -246,13 +262,15 @@ class ajaxAnalysisRequestSubmit():
                 sample = uc(UID=values['Sample_uid'])[0].getObject()
             else:
                 # Primary AR
-                _id = client.invokeFactory('Sample', id=tmpID())
-                sample = client[_id]
+                sample = _createObjectByType("Sample", client, tmpID())
                 saved_form = self.request.form
                 self.request.form = resolved_values
                 sample.setSampleType(resolved_values['SampleType'])
-                sample.setSamplePoint(resolved_values['SamplePoint'])
-                sample.setStorageLocation(resolved_values['StorageLocation'])
+                if 'SamplePoint' in resolved_values:
+                    sample.setSamplePoint(resolved_values['SamplePoint'])
+                if 'StorageLocation' in resolved_values:
+                    sample.setStorageLocation(
+                        resolved_values['StorageLocation'])
                 sample.processForm()
                 self.request.form = saved_form
                 if SamplingWorkflowEnabled:
@@ -298,8 +316,7 @@ class ajaxAnalysisRequestSubmit():
 
             saved_form = self.request.form
             self.request.form = resolved_values
-            clientid = client.invokeFactory('AnalysisRequest', id=tmpID())
-            ar = client[clientid]
+            ar = _createObjectByType("AnalysisRequest", client, tmpID())
             ar.setSample(sample)
             ar.processForm()
             self.request.form = saved_form
@@ -313,25 +330,30 @@ class ajaxAnalysisRequestSubmit():
                 part_prefix = sample.getId() + "-P"
                 if '%s%s' % (part_prefix, _i + 1) in sample.objectIds():
                     parts[_i]['object'] = sample['%s%s' % (part_prefix, _i + 1)]
-                    parts_and_services['%s%s' % (part_prefix, _i + 1)] = p['services']
+                    parts_and_services['%s%s' % (part_prefix, _i + 1)] = p[
+                        'services']
                 else:
-                    _id = sample.invokeFactory('SamplePartition', id=tmpID())
-                    part = sample[_id]
+                    part = _createObjectByType("SamplePartition", sample, tmpID())
                     parts[_i]['object'] = part
                     # Sort available containers by capacity and select the
                     # smallest one possible.
                     if p.get('container', ''):
-                        containers = [_p.getObject() for _p in bsc(UID=p['container'])]
+                        containers = [_p.getObject() for _p in
+                                      bsc(UID=p['container'])]
                         if containers:
                             try:
                                 containers.sort(lambda a, b: cmp(
                                     a.getCapacity()
-                                    and mg(float(a.getCapacity().lower().split(" ", 1)[0]),
-                                           a.getCapacity().lower().split(" ", 1)[1])
+                                    and mg(float(
+                                        a.getCapacity().lower().split(" ", 1)[0]),
+                                           a.getCapacity().lower().split(" ", 1)[
+                                               1])
                                     or mg(0, 'ml'),
                                     b.getCapacity()
-                                    and mg(float(b.getCapacity().lower().split(" ", 1)[0]),
-                                           b.getCapacity().lower().split(" ", 1)[1])
+                                    and mg(float(
+                                        b.getCapacity().lower().split(" ", 1)[0]),
+                                           b.getCapacity().lower().split(" ", 1)[
+                                               1])
                                     or mg(0, 'ml')
                                 ))
                             except:
@@ -345,8 +367,8 @@ class ajaxAnalysisRequestSubmit():
                     # If container is pre-preserved, set the part's preservation,
                     # and flag the partition to be transitioned below.
                     if container \
-                        and container.getPrePreserved() \
-                        and container.getPreservation():
+                            and container.getPrePreserved() \
+                            and container.getPreservation():
                         preservation = container.getPreservation().UID()
                         parts[_i]['prepreserved'] = True
                     else:
@@ -432,10 +454,10 @@ class ajaxAnalysisRequestSubmit():
 
         if len(ARs) > 1:
             message = _("Analysis requests ${ARs} were successfully created.",
-                        mapping={'ARs': ', '.join(ARs)})
+                        mapping={'ARs': safe_unicode(', '.join(ARs))})
         else:
             message = _("Analysis request ${AR} was successfully created.",
-                        mapping={'AR': ARs[0]})
+                        mapping={'AR': safe_unicode(ARs[0])})
 
         self.context.plone_utils.addPortalMessage(message, 'info')
 

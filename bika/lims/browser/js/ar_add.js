@@ -618,17 +618,28 @@ function copyButton(){
 		var first_val = $("input[name^='ar\\.0\\."+fieldName+"']").filter("[type=text]").val();
 		// Reference fields have a hidden *_uid field
 		var first_uid = $("input[name^='ar\\.0\\."+fieldName+"_uid']").val();
+        // multi-valued fields: selection is in {fieldname}-listing
+        var first_multi_html = $("div[name^='ar\\.0\\."+fieldName+"-listing']").html();
 		// col starts at 1 here; we don't copy into the the first row
 		for (var col=1; col<col_count; col++) {
 			var other_uid_elem = $("#ar_" + col + "_" + fieldName + "_uid");
 			if (first_uid !== undefined && first_uid !== null){
 				other_uid_elem.val(first_uid);
 			}
+            var other_multi_div = $("div[name^='ar\\."+col+"\\."+fieldName+"-listing']");
+            if (first_multi_html !== undefined && first_multi_html !== null){
+         	    other_multi_div.html(first_multi_html.replace(".0.", "."+col+"."));
+            }
+            // Actual field value
 			var other_elem = $("#ar_" + col + "_" + fieldName);
 			if (!(other_elem.prop("disabled"))) {
 				$(other_elem).attr("skip_referencewidget_lookup", true);
 				other_elem.val(first_val);
 				other_elem.trigger("change");
+
+                if(fieldName == "Contact") {
+                    set_cc_contacts(col);
+                }
 
 				if(fieldName == "Profile"){
 					unsetTemplate(col);
@@ -835,6 +846,7 @@ function add_No(dlg, element){
 function calcdependencies(elements, auto_yes) {
 	/*jshint validthis:true */
 	auto_yes = auto_yes || false;
+    jarn.i18n.loadCatalog('bika');
 	var _ = window.jarn.i18n.MessageFactory("bika");
 
 	var dep;
@@ -1269,33 +1281,37 @@ function fill_column(data) {
 		}
 		var services = {};
 		var specs = {};
-		var cat_uid, service_uid;
-		var i;
+		var poc_name, cat_uid, service_uid, service_uids;
+		var i, key;
 		for (i = obj.Analyses.length - 1; i >= 0; i--) {
 			var analysis = obj.Analyses[i];
 			cat_uid = analysis.CategoryUID;
 			service_uid = analysis.ServiceUID;
-			if(!(analysis.CategoryUID in services)){
-				services[analysis.CategoryUID] = [];
+            key = analysis.PointOfCapture + "__" + analysis.CategoryUID;
+			if(!(key in services)){
+				services[key] = [];
 			}
-			services[analysis.CategoryUID].push(service_uid);
+			services[key].push(service_uid);
 			specs[service_uid] = analysis.specification;
 		}
-		for(cat_uid in services){
-			if(!services.hasOwnProperty(cat_uid)){ continue; }
-			var service_uids = services[cat_uid];
-			window.toggleCat("lab", cat_uid, col, service_uids, true);
-			for (i = 0; i < service_uids.length; i++) {
-				service_uid = service_uids[i];
-				// $("[column="+col+"]").filter("#"+service_uid).click(); // toggleCat does this.
-				var spec = specs[service_uid];
-				if(spec){
-					$("[name^='ar."+col+".min']").filter("[uid='"+service_uid+"']").val(spec.min);
-					$("[name^='ar."+col+".max']").filter("[uid='"+service_uid+"']").val(spec.max);
-					$("[name^='ar."+col+".error']").filter("[uid='"+service_uid+"']").val(spec.error);
-				}
-			}
-		}
+        for(key in services) {
+            if (!services.hasOwnProperty(key)) {
+                continue;
+            }
+            poc_name = key.split("__")[0];
+            cat_uid = key.split("__")[1];
+            service_uids = services[key];
+            window.toggleCat(poc_name, cat_uid, col, service_uids, true);
+            for (i = 0; i < service_uids.length; i++) {
+                service_uid = service_uids[i];
+                var spec = specs[service_uid];
+                if (spec) {
+                    $("[name^='ar." + col + ".min']").filter("[uid='" + service_uid + "']").val(spec.min);
+                    $("[name^='ar." + col + ".max']").filter("[uid='" + service_uid + "']").val(spec.max);
+                    $("[name^='ar." + col + ".error']").filter("[uid='" + service_uid + "']").val(spec.error);
+                }
+            }
+        }
 	}
 }
 
@@ -1304,7 +1320,9 @@ $(document).ready(function() {
 	// Only if the view is the Analysis Request Add View
 	if ($(".template-ar_add #analysisrequest_edit_form").length > 0) {
 
+    // jarn.i18n.loadCatalog('bika');
 	// var _ = window.jarn.i18n.MessageFactory("bika");
+    // jarn.i18n.loadCatalog('bika');
 	// var PMF = window.jarn.i18n.MessageFactory("plone");
 
 	// var curDate = new Date();
@@ -1388,28 +1406,25 @@ $(document).ready(function() {
 	window.calculate_parts = calculate_parts;
 	window.toggleCat = toggleCat;
 
-  // Show only the contacts and CC from the selected Client
-	var fromclient = window.location.href.search("/clients/") >= 0;
-	if (fromclient) {
-		for (var col=0; col<parseInt($("#col_count").val(), 10); col++) {
-			var element = $("#ar_" + col + "_Contact");
-			var clientuid = $("#ar_" + col + "_Client_uid").val();
-			applyComboFilter(element, "getParentUID", clientuid);
-				element = $("#ar_" + col + "_CCContact");
-				applyComboFilter(element, "getParentUID", clientuid);
-		}
-	} else {
-		$("[id$='_Client']").bind("change", function() {
-			var col = this.id.split("_")[1];
-			var element = $("#ar_" + col + "_Contact");
-			var clientuid = $(this).attr("uid");
-			applyComboFilter(element, "getParentUID", clientuid);
-				element = $("#ar_" + col + "_CCContact");
-				applyComboFilter(element, "getParentUID", clientuid);
-		});
-	}
+    // Show only the contacts and CC from the selected Client
+    $("[id$='_Client']").bind("change", function() {
+        var col = this.id.split("_")[1];
+        var element = $("#ar_" + col + "_Contact");
+        var clientuid = $(this).attr("uid");
+        applyComboFilter(element, "getParentUID", clientuid);
+        element = $("#ar_" + col + "_CCContact");
+        applyComboFilter(element, "getParentUID", clientuid);
+    });
+    // Initial value of contact list, set by the page's hidden ClientUID.
+    for (var col = 0; col < parseInt($("#col_count").val(), 10); col++) {
+        var element = $("#ar_" + col + "_Contact");
+        var clientuid = $("#ar_" + col + "_Client_uid").val();
+        applyComboFilter(element, "getParentUID", clientuid);
+        element = $("#ar_" + col + "_CCContact");
+        applyComboFilter(element, "getParentUID", clientuid);
+    }
 
-	var copy_from = window.location.href.split("copy_from=");
+    var copy_from = window.location.href.split("copy_from=");
 	if(copy_from.length > 1){
 		copy_from = copy_from[1].split("&")[0];
 		copy_from = copy_from.split(",");
