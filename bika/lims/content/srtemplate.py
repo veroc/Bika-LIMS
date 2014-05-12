@@ -61,8 +61,7 @@ schema = BikaSchema.copy() + Schema((
         allowed_content_types=('text/plain'),
         default_output_type="text/plain",
         widget=TextAreaWidget(
-            label=_('Sampling Instructions'),
-            append_only=True,
+            label=_('Sampling Instructions')
         ),
     ),
     ReferenceField(
