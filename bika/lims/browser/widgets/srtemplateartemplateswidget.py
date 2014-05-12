@@ -14,7 +14,7 @@ class SRTemplateARTemplatesView(BikaListingView):
 
     def __init__(self, context, request, fieldvalue, allow_edit):
         super(SRTemplateARTemplatesView, self).__init__(context, request)
-        self.catalog = "bika_setup_catalog"
+        self.catalog = 'bika_setup_catalog'
         self.contentFilter = {
             'portal_type': 'ARTemplate',
             'sort_on': 'sortable_title',
@@ -32,7 +32,7 @@ class SRTemplateARTemplatesView(BikaListingView):
         self.expand_all_categories = True
         self.pagesize = 1000
         self.allow_edit = allow_edit
-        self.form_id = "artemplates"
+        self.form_id = 'artemplates'
         self.columns = {
             'Title': {
                 'title': _('Service'),
@@ -41,9 +41,9 @@ class SRTemplateARTemplatesView(BikaListingView):
             },
         }
         self.review_states = [{
-            'id':'default',
+            'id': 'default',
             'title': _('All'),
-            'contentFilter':{},
+            'contentFilter': {},
             'columns': ['Title'],
             'transitions': [{'id':'empty'}],
         }]
@@ -56,6 +56,7 @@ class SRTemplateARTemplatesView(BikaListingView):
             if not item.has_key('obj'): continue
             obj = item['obj']
             item['replace']['Title'] = title_link(obj)
+            item['selected'] = item['uid'] in self.selected
         return items
 
 
