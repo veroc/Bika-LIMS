@@ -15,6 +15,21 @@ import re
 import transaction
 
 
+def lookup(context, portal_type, **kwargs):
+    at = getToolByName(context, 'archetype_tool')
+    catalog = at.catalog_map.get(portal_type, [None])[0] or 'portal_catalog'
+    catalog = getToolByName(context, catalog)
+    kwargs['portal_type'] = portal_type
+    return catalog(**kwargs)[0].getObject()
+
+
+def check_for_required_columns(name, data, required):
+    for column in required:
+        if not data[column]:
+            message = _("{0} has no '{1}' column." % (name, column))
+            raise Exception(t(message))
+
+
 def Float(thing):
     try:
         f = float(thing)
@@ -1751,21 +1766,49 @@ class Invoice_Batches(WorksheetImporter):
     def Import(self):
         folder = self.context.invoices
         for row in self.get_rows(3):
-            obj = _createObjectByType("InvoiceBatch", folder, tmpID())
-            if not row['title']:
-                message = _("InvoiceBatch has no Title")
-                raise Exception(t(message))
-            if not row['start']:
-                message = _("InvoiceBatch has no Start Date")
-                raise Exception(t(message))
-            if not row['end']:
-                message = _("InvoiceBatch has no End Date")
-                raise Exception(t(message))
+            obj = _createObjectByType('InvoiceBatch', folder, tmpID())
+            check_for_required_columns('InvoiceBatch', row, [
+                'title', 'start', 'end'
+            ])
             obj.edit(
                 title=row['title'],
                 BatchStartDate=row['start'],
                 BatchEndDate=row['end'],
             )
+            renameAfterCreation(obj)
+
+
+class SR_Templates(WorksheetImporter):
+
+    def Import(self):
+        context = self.context
+        # Refer to the default folder for SRTemplates
+        default_folder = self.context.bika_setup.bika_srtemplates
+        # Iterate through the rows
+        for row in self.get_rows(3):
+            # Check for required columns
+            check_for_required_columns('SRTemplate', row, ['title'])
+            # Get the folder that should contain the template
+            client_title = row['client_title']
+            if client_title:
+                folder = lookup(context, 'Client', getName=client_title)
+            else:
+                folder = default_folder
+            # Lookup the department
+            department = lookup(
+                context, 'Department', Title=row['department_title']
+            )
+            # Create the SRTemplate object
+            obj = _createObjectByType('SRTemplate', folder, tmpID())
+            # Apply the row values
+            obj.edit(
+                title=row['title'],
+                description=row['description'],
+                Instructions=row['instructions'],
+                Sampler=row['default_sampler_username'],
+                Department=department,
+            )
+            # Rename the new object
             renameAfterCreation(obj)
 
 

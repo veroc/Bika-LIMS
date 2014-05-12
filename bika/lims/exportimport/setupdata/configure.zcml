@@ -261,6 +261,12 @@
       for="Products.CMFPlone.interfaces.IPloneSiteRoot"/>
 
     <adapter
+      name="SR_Templates"
+      factory="bika.lims.exportimport.setupdata.SR_Templates"
+      provides="bika.lims.interfaces.ISetupDataImporter"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"/>
+
+    <adapter
       name="Lab_Products"
       factory="bika.lims.exportimport.setupdata.Lab_Products"
       provides="bika.lims.interfaces.ISetupDataImporter"

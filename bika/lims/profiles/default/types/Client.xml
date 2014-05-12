@@ -26,6 +26,7 @@
   <element value="SamplePoint"/>
   <element value="SRTemplate"/>
   <element value="SupplyOrder"/>
+  <element value="SamplingRound"/>
   <element value="Folder"/>
  </property>
  <property name="allow_discussion">False</property>
