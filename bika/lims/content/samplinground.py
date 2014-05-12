@@ -23,6 +23,27 @@ import sys
 
 
 schema = BikaSchema.copy() + Schema((
+    ReferenceField(
+        'Template',
+        allowed_types=('SRTemplate',),
+        referenceClass=HoldingReference,
+        relationship='SamplingRoundSRTemplate',
+        mode='rw',
+        read_permission=permissions.View,
+        write_permission=permissions.ModifyPortalContent,
+        widget=BikaReferenceWidget(
+            label=_('Template'),
+            size=20,
+            visible={
+                'edit': 'visible',
+                'view': 'visible',
+                'add': 'visible',
+                'secondary': 'invisible'
+            },
+            catalog_name='bika_setup_catalog',
+            showOn=True,
+        ),
+    ),
     DurationField(
         'SamplingFrequency',
         vocabulary_display_path_bound=sys.maxint,

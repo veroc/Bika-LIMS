@@ -1,5 +1,6 @@
 from AccessControl import ClassSecurityInfo
 from bika.lims import bikaMessageFactory as _
+from bika.lims.utils import isAttributeHidden
 from bika.lims.utils import title_link
 from bika.lims.browser.bika_listing import BikaListingView
 from Products.Archetypes.Registry import registerWidget
