@@ -1,20 +1,17 @@
-from Acquisition import aq_parent, aq_inner
+import plone, json
+import zope.event
+
 from AccessControl import getSecurityManager
-from DateTime import DateTime
-from Products.Archetypes.config import REFERENCE_CATALOG
-from Products.Archetypes.event import ObjectInitializedEvent
-from Products.CMFCore.utils import getToolByName
-from Products.CMFPlone.utils import _createObjectByType
-from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from Acquisition import aq_parent, aq_inner
 from bika.lims import PMF, logger, bikaMessageFactory as _
-from bika.lims.utils import t
+from bika.lims.adapters.referencewidgetvocabulary import DefaultReferenceWidgetVocabulary
+from bika.lims.adapters.widgetvisibility import WidgetVisibility as _WV
 from bika.lims.browser import BrowserView
+from bika.lims.browser.analysisrequest import AnalysisRequestsView
+from bika.lims.browser.analysisrequest import AnalysisRequestWorkflowAction
 from bika.lims.browser.batchfolder import BatchFolderContentsView
-from bika.lims.browser.analysisrequest import AnalysisRequestWorkflowAction, \
-    AnalysisRequestsView
 from bika.lims.browser.bika_listing import BikaListingView
 from bika.lims.browser.publish import doPublish
-from bika.lims.adapters.widgetvisibility import WidgetVisibility as _WV
 from bika.lims.browser.sample import SamplesView
 from bika.lims.idserver import renameAfterCreation
 from bika.lims.interfaces import IClient
@@ -24,16 +21,22 @@ from bika.lims.permissions import *
 from bika.lims.subscribers import doActionFor, skip
 from bika.lims.utils import changeWorkflowState
 from bika.lims.utils import isActive
+from bika.lims.utils import t
 from bika.lims.utils import tmpID
 from bika.lims.utils import to_utf8
 from bika.lims.vocabularies import CatalogVocabulary
+from DateTime import DateTime
 from operator import itemgetter
 from plone.app.content.browser.interfaces import IFolderContentsView
 from plone.app.layout.globals.interfaces import IViewView
+from Products.Archetypes.config import REFERENCE_CATALOG
+from Products.Archetypes.event import ObjectInitializedEvent
+from Products.CMFCore.utils import getToolByName
+from Products.CMFPlone.utils import _createObjectByType
+from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope.component import adapts
 from zope.interface import implements
-import plone, json
-import zope.event
+
 
 class ClientWorkflowAction(AnalysisRequestWorkflowAction):
     """ This function is called to do the worflow actions
@@ -977,6 +980,21 @@ class ClientContactVocabularyFactory(CatalogVocabulary):
             path={'query': "/".join(self.context.getPhysicalPath()),
                   'level': 0}
         )
+
+
+class ReferenceWidgetVocabulary(DefaultReferenceWidgetVocabulary):
+
+    def __call__(self):
+        base_query = json.loads(self.request['base_query'])
+        portal_type = base_query.get('portal_type', [])
+        if 'SRTemplate' in portal_type:
+            base_query['getClientUID'] = [
+                self.context.UID(),
+                self.context.bika_setup.bika_srtemplates.UID()
+            ]
+            self.request['base_query'] = json.dumps(base_query)
+        return DefaultReferenceWidgetVocabulary.__call__(self)
+
 
 class ajaxGetClientInfo(BrowserView):
     def __call__(self):

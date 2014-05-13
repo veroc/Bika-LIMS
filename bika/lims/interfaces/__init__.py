@@ -339,6 +339,11 @@ class ISamplingRound(Interface):
     ""
 
 
+class ISRTemplate(Interface):
+
+    ""
+
+
 class ISRTemplates(Interface):
 
     ""

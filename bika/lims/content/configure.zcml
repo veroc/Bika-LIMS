@@ -8,6 +8,10 @@
 
     <adapter name="BatchDate" factory=".batch.BatchDate" />
 
+
+    <adapter name="getClientUID" factory=".srtemplate.ParentUID" />
+
+
     <subscriber
       for="bika.lims.interfaces.IPricelist
            zope.lifecycleevent.interfaces.IObjectModifiedEvent"

@@ -2,6 +2,8 @@
     Sampling Round
 """
 
+import sys
+
 from Products.Archetypes.public import *
 
 from AccessControl import ClassSecurityInfo
@@ -19,7 +21,6 @@ from Products.Archetypes.references import HoldingReference
 from Products.ATExtensions.field.records import RecordsField
 from Products.CMFCore import permissions
 from Products.CMFCore.utils import getToolByName
-import sys
 
 
 schema = BikaSchema.copy() + Schema((
@@ -34,12 +35,6 @@ schema = BikaSchema.copy() + Schema((
         widget=BikaReferenceWidget(
             label=_('Template'),
             size=20,
-            visible={
-                'edit': 'visible',
-                'view': 'visible',
-                'add': 'visible',
-                'secondary': 'invisible'
-            },
             catalog_name='bika_setup_catalog',
             showOn=True,
         ),

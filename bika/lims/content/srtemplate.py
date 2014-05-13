@@ -2,6 +2,8 @@
     Sampling Round Template
 """
 
+import sys
+
 from Products.Archetypes.public import *
 
 from AccessControl import ClassSecurityInfo
@@ -14,12 +16,14 @@ from bika.lims.browser.widgets import SRTemplateARTemplatesWidget
 from bika.lims.config import PROJECTNAME
 from bika.lims.content.bikaschema import BikaSchema
 from bika.lims.idserver import renameAfterCreation
+from bika.lims.interfaces import ISRTemplate
 from bika.lims.utils import getUsers
+from plone.indexer import indexer
 from Products.Archetypes.references import HoldingReference
 from Products.ATExtensions.field.records import RecordsField
 from Products.CMFCore import permissions
 from Products.CMFCore.utils import getToolByName
-import sys
+from zope.interface import implements
 
 
 schema = BikaSchema.copy() + Schema((
@@ -87,6 +91,8 @@ schema['title']._validationLayer()
 
 
 class SRTemplate(BaseContent):
+    implements(ISRTemplate)
+
     security = ClassSecurityInfo()
     schema = schema
     displayContentsTab = False
@@ -101,3 +107,8 @@ class SRTemplate(BaseContent):
 
 
 registerType(SRTemplate, PROJECTNAME)
+
+
+@indexer(ISRTemplate)
+def ParentUID(instance):
+    return instance.aq_parent.UID()
