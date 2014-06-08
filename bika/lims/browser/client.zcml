@@ -18,7 +18,6 @@
       provides="bika.lims.interfaces.IReferenceWidgetVocabulary"
     />
 
-
     <!-- Workflow action button clicked -->
     <browser:page
       for="bika.lims.interfaces.IClient"

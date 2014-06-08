@@ -231,7 +231,7 @@ class BikaGenerator:
         mp(ManageReference, ['Manager', 'LabManager', 'LabClerk', 'Analyst'], 1)
         mp(ManageSuppliers, ['Manager', 'LabManager', 'LabClerk', 'Analyst'], 1)
         mp(ManageSamples, ['Manager', 'LabManager', 'LabClerk', 'Analyst', 'Sampler', 'Preserver', 'Owner', 'RegulatoryInspector'], 1)
-        mp(ManageWorksheets, ['Manager', 'LabManager', 'LabClerk', 'Analyst', 'RegulatoryInspector'], 1)
+        mp(ManageWorksheets, ['Manager', 'LabManager'], 1)
         mp(PostInvoiceBatch, ['Manager', 'LabManager', 'Owner'], 1)
 
         mp(CancelAndReinstate, ['Manager', 'LabManager'], 0)
@@ -568,6 +568,7 @@ class BikaGenerator:
         addColumn(bac, 'getRequestID')
         addColumn(bac, 'getReferenceAnalysesGroupID')
         addColumn(bac, 'getResultCaptureDate')
+        addColumn(bac, 'Priority')
 
         # bika_catalog
 
@@ -647,7 +648,8 @@ class BikaGenerator:
         addIndex(bc, 'getSamplingDate', 'DateIndex')
         addIndex(bc, 'getServiceTitle', 'FieldIndex')
         addIndex(bc, 'getWorksheetTemplateTitle', 'FieldIndex')
-
+        addIndex(bc, 'Priority', 'FieldIndex')
+        addIndex(bc, 'BatchUID', 'FieldIndex')
         addColumn(bc, 'path')
         addColumn(bc, 'UID')
         addColumn(bc, 'id')

@@ -116,11 +116,17 @@ class InvoiceView(BrowserView):
         self.analyses = analyses
         # Get totals
         self.subtotal = context.getSubtotal()
-        self.vatTotal = "%.2f" % context.getVATTotal()
+        self.VATAmount = "%.2f" % context.getVATAmount()
         self.totalPrice = "%.2f" % context.getTotalPrice()
         # Render the template
         return self.template()
 
+    def getPriorityIcon(self):
+        priority = self.context.getPriority()
+        if priority:
+            icon = priority.getBigIcon()
+            if icon:
+                return '/'.join(icon.getPhysicalPath())
 
 class InvoicePrintView(InvoiceView):
 
