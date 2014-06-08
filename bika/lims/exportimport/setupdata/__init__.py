@@ -49,6 +49,13 @@ def create_supply_order_item(context, product_title, quantity):
     renameAfterCreation(obj)
 
 
+def build_duration(values):
+    values = [int(o.strip()) for o in values.split(',')]
+    res = dict(zip(['days', 'hours', 'minutes'], values))
+    print res
+    return res
+
+
 def Float(thing):
     try:
         f = float(thing)
@@ -1854,6 +1861,7 @@ class SR_Templates(WorksheetImporter):
                 description=row['description'],
                 Instructions=row['instructions'],
                 Sampler=row['default_sampler_username'],
+                SamplingFrequency=build_duration(row['sampling_frequency']),
                 Department=department,
             )
             # Rename the new object
