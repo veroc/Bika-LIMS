@@ -26,6 +26,7 @@ from bika.lims.utils import isActive
 from bika.lims.utils import t
 from bika.lims.utils import tmpID
 from bika.lims.utils import to_utf8
+from bika.lims.utils import title_link
 from bika.lims.vocabularies import CatalogVocabulary
 from DateTime import DateTime
 from operator import itemgetter
@@ -532,43 +533,49 @@ class ClientSamplingRoundsView(BikaListingView):
 
     def __init__(self, context, request):
         super(ClientSamplingRoundsView, self).__init__(context, request)
-        self.catalog = "bika_setup_catalog"
+        self.catalog = 'portal_catalog'
         self.contentFilter = {
-            'portal_type': 'SampleRound',
+            'portal_type': 'SamplingRound',
             'sort_on':'sortable_title',
             'path': {
-                "query": "/".join(self.context.getPhysicalPath()),
-                "level" : 0 },
+                'query': '/'.join(self.context.getPhysicalPath()),
+                'level': 0
+            },
         }
         self.show_sort_column = False
         self.show_select_row = False
         self.show_select_column = True
         self.pagesize = 50
-        self.form_id = "srtemplates"
-        self.icon = self.portal_url + "/++resource++bika.lims.images/artemplate_big.png"
-        self.title = _("Sampling Rounds")
-        self.description = ""
+        self.form_id = 'samplingrounds'
+        self.icon = self.portal_url + '/++resource++bika.lims.images/analysisrequest_big.png'
+        self.title = _('Sampling Rounds')
+        self.description = ''
         self.columns = {
-            'title': {'title': _('Title'),
-                      'index': 'sortable_title'},
-            'Description': {'title': _('Description'),
-                            'index': 'description'},
+            'title': {
+                'title': _('Title'),
+                'index': 'sortable_title'
+            },
+            'Description': {
+                'title': _('Description'),
+                'index': 'description'
+            },
         }
-        self.review_states = [
-            {'id':'default',
-             'title': _('All'),
-             'contentFilter': {},
-             'transitions': [],
-             'columns': ['title', 'Description']},
-        ]
+        self.review_states = [{
+            'id':'default',
+            'title': _('All'),
+            'contentFilter': {},
+            'transitions': [],
+            'columns': ['title', 'Description']
+        }]
 
     def __call__(self):
         mtool = getToolByName(self.context, 'portal_membership')
         checkPermission = mtool.checkPermission
         if checkPermission(AddSamplingRound, self.context):
-            self.context_actions[_('Add')] = \
-                {'url': 'createObject?type_name=SamplingRound',
-                 'icon': '++resource++bika.lims.images/add.png'}
+            self.context_actions[_('Add')] = {
+                'url': 'createObject?type_name=SamplingRound',
+                'icon': '++resource++bika.lims.images/add.png'
+            }
         return super(ClientSamplingRoundsView, self).__call__()
 
     def folderitems(self):
@@ -577,8 +584,7 @@ class ClientSamplingRoundsView(BikaListingView):
             if not items[x].has_key('obj'): continue
             obj = items[x]['obj']
             items[x]['title'] = obj.Title()
-            items[x]['replace']['title'] = "<a href='%s'>%s</a>" % \
-                 (items[x]['url'], items[x]['title'])
+            items[x]['replace']['title'] = title_link(obj)
         return items
 
 
@@ -634,8 +640,7 @@ class ClientSRTemplatesView(BikaListingView):
             if not items[x].has_key('obj'): continue
             obj = items[x]['obj']
             items[x]['title'] = obj.Title()
-            items[x]['replace']['title'] = "<a href='%s'>%s</a>" % \
-                 (items[x]['url'], items[x]['title'])
+            items[x]['replace']['title'] = title_link(obj)
         return items
 
 

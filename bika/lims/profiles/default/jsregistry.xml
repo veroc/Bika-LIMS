@@ -101,6 +101,17 @@
               insert-after="*"/>
 
 <javascript authenticated="True"
+              id="++resource++bika.lims.js/sr_add.js"
+              cacheable="True"
+              compression="safe"
+              conditionalcomment=""
+              cookable="True"
+              enabled="on"
+              expression=""
+              inline="False"
+              insert-after="*"/>
+
+<javascript authenticated="True"
               id="++resource++bika.lims.js/worksheet.js"
               cacheable="True"
               compression="safe"

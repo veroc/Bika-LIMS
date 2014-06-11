@@ -719,7 +719,7 @@ class BikaGenerator:
         at.setCatalogsByType('Manufacturer', ['bika_setup_catalog', 'portal_catalog'])
         at.setCatalogsByType('Preservation', ['bika_setup_catalog', ])
         at.setCatalogsByType('ReferenceDefinition', ['bika_setup_catalog', 'portal_catalog'])
-        at.setCatalogsByType('SRTemplate', ['bika_setup_catalog'])
+        at.setCatalogsByType('SRTemplate', ['bika_setup_catalog', 'portal_catalog'])
         at.setCatalogsByType('SubGroup', ['bika_setup_catalog', ])
         at.setCatalogsByType('Supplier', ['bika_setup_catalog', 'portal_catalog'])
         at.setCatalogsByType('Unit', ['bika_setup_catalog', ])
