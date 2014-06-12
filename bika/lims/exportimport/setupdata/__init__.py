@@ -52,7 +52,6 @@ def create_supply_order_item(context, product_title, quantity):
 def build_duration(values):
     values = [int(o.strip()) for o in values.split(',')]
     res = dict(zip(['days', 'hours', 'minutes'], values))
-    print res
     return res
 
 
@@ -1881,6 +1880,29 @@ class SR_Templates(WorksheetImporter):
             )
             # Rename the new object
             renameAfterCreation(obj)
+
+
+class SRTs_ARs(WorksheetImporter):
+
+    def Import(self):
+        context = self.context
+        # Iterate through the rows
+        for row in self.get_rows(3):
+            # Check for required columns
+            check_for_required_columns(
+                'SRTemplate ARTemplates', row, ['sr_template', 'ar_template']
+            )
+            # Lookup the required templates
+            srtemplate = lookup(
+                context, 'SRTemplate', Title=row['sr_template']
+            )
+            artemplate = lookup(
+                context, 'ARTemplate', Title=row['ar_template']
+            )
+            # Attach the ARTemplates to the SRTemplate
+            artemplates = srtemplate.getARTemplates()
+            artemplates.append(artemplate)
+            srtemplate.setARTemplates(artemplates)
 
 
 class AR_Priorities(WorksheetImporter):
