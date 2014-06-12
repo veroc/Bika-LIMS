@@ -1878,6 +1878,8 @@ class SR_Templates(WorksheetImporter):
                 SamplingFrequency=build_duration(row['sampling_frequency']),
                 Department=department,
             )
+            # Prevent WebDAV errors by unmarking creation flag
+            obj.unmarkCreationFlag()
             # Rename the new object
             renameAfterCreation(obj)
 
