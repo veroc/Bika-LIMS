@@ -209,11 +209,26 @@ def get_current_year():
     return DateTime().strftime("%Y")[2:]
 
 
+def search_catalogs(portal_type):
+    """Returns brains which share the same portal_type
+    """
+    catalog_names = ['portal_catalog', 'bika_setup_catalog', 'bika_catalog']
+    UIDs = []
+    all_brains = []
+    for catalog_name in catalog_names:
+        catalog = api.get_tool(catalog_name)
+        brains = api.search({"portal_type": portal_type}, catalog=catalog_name)
+        for brain in brains:
+            if brain.UID not in UIDs:
+                all_brains.append(brain)
+                UIDs.append(brain.UID)
+    return all_brains
+
 def search_by_prefix(portal_type, prefix):
     """Returns brains which share the same portal_type and ID prefix
     """
-    catalog = api.get_tool("portal_catalog")
-    brains = catalog({"portal_type": portal_type})
+    # Get all brains for all catalogs for given portal type
+    brains = search_catalogs(portal_type)
     # Filter brains with the same ID prefix
     return filter(lambda brain: api.get_id(brain).startswith(prefix), brains)
 
