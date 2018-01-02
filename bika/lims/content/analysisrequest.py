@@ -2514,6 +2514,9 @@ class AnalysisRequest(BaseFolder):
 
     security.declarePublic('getDatePublished')
 
+    def getDateVerified(self):
+        return getTransitionDate(self, 'verify')
+
     def getDatePublished(self):
         return getTransitionDate(self, 'publish')
 
